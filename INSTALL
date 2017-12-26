@@ -1,0 +1,152 @@
+########################################################################
+####  installation
+
+## LOCAL -- do this in one window for copy-n-paste as you work in another window
+cat notes.JavaScript-programming-in-Minecraft \
+  | sed 's/USER/==USER==/g'                   \
+  | sed 's/TARGET_HOST/==TARGET_HOST==/g'     | more
+
+
+## LOCAL
+cat ~/.ssh/id_rsa.pub
+
+## REMOTE
+ssh root@TARGET_HOST
+mkdir     .ssh
+chmod 755 .ssh/
+touch     .ssh/authorized_keys
+chmod 600 .ssh/authorized_keys
+echo '==YOUR_SSH_PUBLIC_KEY==' > .ssh/authorized_keys
+
+yum clean all
+yum list | grep openjdk
+yum -y install net-tools screen rsync unzip git java-1.8.0-openjdk-devel
+curl -sL https://rpm.nodesource.com/setup_7.x | bash -
+yum -y install nodejs
+
+useradd   USER
+cd        /home/USER
+mkdir     .ssh
+chmod 755 .ssh/
+touch     .ssh/authorized_keys
+chmod 600 .ssh/authorized_keys
+echo '==YOUR_SSH_PUBLIC_KEY==' > .ssh/authorized_keys
+chown -R  USER:USER .ssh/
+
+mkdir               /opt/spigot
+chown     USER:USER /opt/spigot
+
+exit
+
+## LOCAL
+mkdir mcsc
+cd    mcsc
+curl -O https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar
+curl -O https://scriptcraftjs.org/download/latest/scriptcraft-3.2.1/scriptcraft.jar
+[obtain launch.sh and orbit.sh and scriptupload/ from somewhere]
+
+## REMOTE
+rsync -ave ssh ./ USER@TARGET_HOST:/home/USER
+ssh USER@TARGET_HOST
+
+git config --global --unset core.autocrlf
+## this next step takes a while
+java -jar BuildTools.jar
+## ends successfully with : "Success! Everything compiled successfully. Copying final .jar files now."
+mv -i craftbukkit-1.12.2.jar spigot-1.12.2.jar /opt/spigot/
+
+cd /opt/spigot
+java -Xms1G -Xmx1G -XX:+UseConcMarkSweepGC -jar spigot-1.12.2.jar
+## the MC server will create some default config files and shutdown
+## accpet EULA by changing 'false' to 'true':
+sed -i 's/^eula=.*$/eula=true/' /opt/spigot/eula.txt
+
+cat                                      /opt/spigot/server.properties
+## the file should be mostly empty
+echo 'server-ip='                         >> /opt/spigot/server.properties
+echo 'server-port=25565'                  >> /opt/spigot/server.properties
+echo 'motd=ScriptCraft Minecraft Server'  >> /opt/spigot/server.properties
+echo 'level-name=WORLD_NAME'              >> /opt/spigot/server.properties
+echo 'level-seed=WORLD_NAME'              >> /opt/spigot/server.properties
+echo 'gamemode=1'                         >> /opt/spigot/server.properties
+echo 'difficulty=2'                       >> /opt/spigot/server.properties
+echo 'pvp=true'                           >> /opt/spigot/server.properties
+echo 'max-players=8'                      >> /opt/spigot/server.properties
+echo 'snooper-enabled=false'              >> /opt/spigot/server.properties
+##
+## there are several other settings, but the defaults should be fine
+## 'gamemode=1' (Creative) is probably best for learning programming,
+## but surely 'gamemode=0' (Survival) would be fun, too!  ;-]
+##
+vi                                           /opt/spigot/server.properties    ## to change WORLD_NAME, if desired
+
+## start the MC server again to complete initialization
+java -Xms1G -Xmx1G -XX:+UseConcMarkSweepGC -jar spigot-1.12.2.jar
+## in the Minecraft console, make yourself and 'op' for in-game server admin
+>op yourminecraftname
+>stop
+
+cp -ip  /home/USER/scriptcraft.jar /opt/spigot/plugins/
+## start the MC server again so ScriptCraft can perform its own initialization
+java -Xms1G -Xmx1G -XX:+UseConcMarkSweepGC -jar spigot-1.12.2.jar
+>stop
+mkdir                   /opt/spigot/scriptcraft/plugins/scriptupload
+
+cp -Rip /home/USER/scriptupload    /opt/spigot/
+cd /opt/spigot/scriptupload
+npm install
+
+cp -ip        /home/USER/launch.sh       /opt/spigot/
+cp -ip        /home/USER/orbit.sh        /opt/spigot/
+chmod 755     crontab.sh
+echo 'INIT' > crontab.log
+
+## as root :
+echo '*  *  *  *  * USER /opt/spigot/scriptupload/crontab.sh' >> /etc/crontab
+
+## to disable scriptupload.js :
+sed -r -i 's/^(.*scriptupload.crontab.sh.*)$/# \1/'   /etc/crontab
+kill -INT `ps -www -eo pid,args | grep 'node scriptupload.js' | grep -v grep | sed 's/^ *//' | cut '-d ' -f1`
+## to reenable scriptupload.js :
+sed -r -i 's/^#+ *(.*scriptupload.crontab.sh.*)$/\1/' /etc/crontab
+
+
+####  launch!
+## 'stop' from the console or '/stop' as a Minecraft command will initiate a server shutdown;
+## launch.sh and orbit.sh work together to restart it; this allows for remote restart
+/opt/spigot/launch.sh
+
+## 'touch /opt/spigot/DONOTRESTART' to prevent launch.sh or orbit.sh from re/starting Minecraft
+## 'rm    /opt/spigot/DONOTRESTART' to return to normal start and remote-restart
+
+## launch.sh makes use of the excellent 'screen' to allow the process to continue running after logging off;
+## to reconnect:   screen -r   (as the user who ran 'launch.sh')
+## to disconnect:  CTRL-A D    (see 'man screen' for full info)
+
+
+## you can now connect to the Minecraft server from the Minecraft client using : TARGET_HOST
+
+## you can also upload JavaScript files using                                  : http://TARGET_HOST:26656/scriptupload
+## they show up in /opt/spigot/scriptcraft/plugins/scriptupload, and are
+## usable per the ScriptCraft instructions; see :
+##
+##         https://scriptcraftjs.org/
+##         https://github.com/walterhiggins/ScriptCraft/blob/master/docs/YoungPersonsGuideToProgrammingMinecraft.md
+##
+## to test, upload the following script : ...
+##
+##         var woolz = function() {
+##            up().box(blocks.wool.red, 1, 4, 1);
+##         }
+##         exports.woolz = woolz;
+##
+## then, in Minecraft do the following two things : ...
+##
+##         issue: "/js refresh()"
+##         look at a nearby block at your feet and issue: "/js woolz()"
+##
+## a short stack of red wool will be created where you are looking;
+## an exception stack means something is not quite right ...
+##
+
+

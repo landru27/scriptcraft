@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <title>ScriptCraft script uploader</title>
+
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=10.0, user-scalable=yes" />
+
+    <link type="text/css" rel="stylesheet" href="../css/stylesheet.css" />
+    <link type="text/css" rel="stylesheet" href="../css/codemirror.css" />
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans Condensed:300italic,300,700" rel="stylesheet" type="text/css">
+  </head>
+  <body>
+    <header id="banner">
+      <h1 class="bannertext">ScriptCraft script uploader</h1>
+    </header>
+
+    <section class="info">
+      <h2><%= msg %></h2>
+      <div id="uploadform">
+        <form method="POST" action="/scriptupload">
+          <br /><input type="text" name="scriptname" value="<%= scriptname %>">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="submit">
+          <br />
+          <br /><textarea id="myTextarea" name="scriptbody" cols="72" rows="64"><%= scriptbody %></textarea>
+        </form>
+      </div>
+    </section>
+
+    <section class="info">
+      <br />
+      <p>powered by <a href="https://nodejs.org/en/">nodejs</a> and <a href="http://codemirror.net/">CodeMirror</a>
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="../js/codemirror.js"></script>
+    <script src="../js/javascript.js"></script>
+    <script>
+      var myTextArea = document.getElementById("myTextarea")
+      var myCodeMirror = CodeMirror.fromTextArea(myTextArea);
+    </script>
+
+  </body>
+</html>

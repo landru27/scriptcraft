@@ -1,0 +1,20 @@
+########################################################################
+####  setup local dedicated machine
+
+[download e.g. CentOS-7-x86_64-Minimal-1708.iso from CentOS website]                ## ~30min download
+[use a USB stick as installation media]
+[diskutil list]                                                                     ## find out 'N' in "diskN" for next steps
+[diskutil unmountDisk /dev/diskN
+[dd bs=1m if=/Users/az/Downloads/CentOS-7-x86_64-Minimal-1708.iso of=/dev/diskN]    ## ~10min copy
+[boot from the USB stick and install CentOS]                                        ## ~20min install
+
+cp -ip                             /etc/sysconfig/network-scripts/ifcfg-enp3s0  /root
+sed -i 's/^ONBOOT=.*$/ONBOOT=yes/' /etc/sysconfig/network-scripts/ifcfg-enp3s0
+ifup enp3s0
+yum clean all
+yum -y install net-tools screen rsync unzip
+systemctl disable firewalld
+systemctl stop firewalld
+shutdown -r now
+
+
