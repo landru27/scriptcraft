@@ -8,6 +8,8 @@ Minecraft is a whole lot of fun, and provides a rich virtual environment.  And, 
 
 I have added a file uploader to this mix, to provide a user-friendly way in which users can add or update the scripts that they write.  This allows people to focus on mastering JavaScript, not needing to get lost in the mechanics of juggling files and such.
 
+The `INSTALL` file in this repo consolidates the installation directions for Spigot, ScriptCraft, and my script uploader.  For reference, here are some links to the source projects.  I recommend skipping over these links for now, and coming back to them if you want to look into the material I drew from, or if you run into issues that might be clarified in the installation notes I worked from.  I also recommend returning after installation to _The Young Person's Guide to Programming in Minecraft_ that is part of the ScriptCraft material, as an excellent way to explore what is possible.
+
 related websites:  
 https://www.spigotmc.org/  
 https://www.spigotmc.org/wiki/spigot-installation/  
@@ -19,6 +21,8 @@ https://github.com/walterhiggins/ScriptCraft/blob/master/docs/YoungPersonsGuideT
 
 
 ###  installation
+
+My installations have all been on CentOS 7 target machines, which is reflected in things like the `yum` commands.  I imagine that there are e.g. corresponding `apt-get` commands for Linux distros that use `apt` instead of `yum`.  Feedback from folks who perform this installation on non-CentOS targets is welcome.
 
 To install Spigot, ScriptCraft, and my script uploader, procure a target machine, such as a PC on your home network, a VM at a provider such as DigitalOcean, or similar.  Then, do the following:
 
