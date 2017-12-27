@@ -8,14 +8,14 @@ Minecraft is a whole lot of fun, and provides a rich virtual environment.  And, 
 
 I have added a file uploader to this mix, to provide a user-friendly way in which users can add or update the scripts that they write.  This allows people to focus on mastering JavaScript, not needing to get lost in the mechanics of juggling files and such.
 
-related websites:
-https://www.spigotmc.org/
-https://www.spigotmc.org/wiki/spigot-installation/
-https://www.spigotmc.org/wiki/buildtools/
+related websites:  
+https://www.spigotmc.org/  
+https://www.spigotmc.org/wiki/spigot-installation/  
+https://www.spigotmc.org/wiki/buildtools/  
 
-https://scriptcraftjs.org/
-https://github.com/walterhiggins/ScriptCraft/blob/master/README.md
-https://github.com/walterhiggins/ScriptCraft/blob/master/docs/YoungPersonsGuideToProgrammingMinecraft.md
+https://scriptcraftjs.org/  
+https://github.com/walterhiggins/ScriptCraft/blob/master/README.md  
+https://github.com/walterhiggins/ScriptCraft/blob/master/docs/YoungPersonsGuideToProgrammingMinecraft.md  
 
 
 ###  installation
