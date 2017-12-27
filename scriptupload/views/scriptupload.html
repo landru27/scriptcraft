@@ -17,7 +17,7 @@
     </header>
 
     <section class="info">
-      <h2><%= msg %></h2>
+      <h2 id="message"><%= msg %></h2>
       <div id="uploadform">
         <form method="POST" action="/scriptupload">
           <br /><input type="text" name="scriptname" value="<%= scriptname %>">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="submit">
@@ -38,6 +38,11 @@
     <script>
       var myTextArea = document.getElementById("myTextarea")
       var myCodeMirror = CodeMirror.fromTextArea(myTextArea);
+    </script>
+    <script>
+      $(document).ready(function(){
+        $('#message').delay(3000).fadeTo(500, 0);
+      });
     </script>
 
   </body>
