@@ -2,13 +2,14 @@
 ####  installation
 
 ## LOCAL -- do this in one window for copy-n-paste as you work in another window
-cat notes.JavaScript-programming-in-Minecraft \
-  | sed 's/USER/==USER==/g'                   \
-  | sed 's/TARGET_HOST/==TARGET_HOST==/g'     | more
+cat INSTALL                                \
+  | sed 's/USER/==USER==/g'                \
+  | sed 's/TARGET_HOST/==TARGET_HOST==/g'  \
+  | more
 
 
 ## LOCAL
-cat ~/.ssh/id_rsa.pub
+cat ~/.ssh/id_rsa.pub    ## used below in two places
 
 ## REMOTE
 ssh root@TARGET_HOST
@@ -39,14 +40,11 @@ chown     USER:USER /opt/spigot
 exit
 
 ## LOCAL
-mkdir mcsc
-cd    mcsc
 curl -O https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar
 curl -O https://scriptcraftjs.org/download/latest/scriptcraft-3.2.1/scriptcraft.jar
-[obtain launch.sh and orbit.sh and scriptupload/ from somewhere]
 
 ## REMOTE
-rsync -ave ssh ./ USER@TARGET_HOST:/home/USER
+rsync -ave ssh --exclude=".git*" ./ USER@TARGET_HOST:/home/USER
 ssh USER@TARGET_HOST
 
 git config --global --unset core.autocrlf
