@@ -14,14 +14,20 @@ module.exports = function(app){
   });
 
   app.post('/scriptupload', function(req, res){
-    var scriptfile = '/opt/spigot/scriptcraft/plugins/scriptupload';
-    scriptfile = scriptfile + '/' + req.body.scriptname;
+    var scriptpath = '/opt/spigot/scriptcraft/plugins/scriptupload';
+    var scriptname = req.body.scriptname;
+
+    if (! scriptname.match(/\.js$/)) {
+      scriptname = scriptname + '.js';
+    }
+
+    var scriptfile = scriptpath + '/' + scriptname;
 
     fs.writeFileSync(scriptfile, req.body.scriptbody, {flag: 'w'});
 
     res.render('scriptupload', {
       msg: 'upload complete!  remember to "/js refresh()"',
-      scriptname: req.body.scriptname,
+      scriptname: scriptname,
       scriptbody: req.body.scriptbody
     });
   });
