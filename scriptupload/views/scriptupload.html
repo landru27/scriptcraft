@@ -37,7 +37,18 @@
     <script src="../js/javascript.js"></script>
     <script>
       var myTextArea = document.getElementById("myTextarea")
-      var myCodeMirror = CodeMirror.fromTextArea(myTextArea);
+      var myCodeMirror = CodeMirror.fromTextArea(myTextArea, {
+        indentUnit: 4,
+        lineNumbers: true,
+        cursorScrollMargin: 4,
+        viewportMargin: Infinity,
+        extraKeys: {
+          Tab: function(cm) {
+            var spaces = Array(cm.getOption("indentUnit") + 1).join(" ");
+            cm.replaceSelection(spaces);
+          }
+        }
+      });
     </script>
     <script>
       $(document).ready(function(){
