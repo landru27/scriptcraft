@@ -1,0 +1,38 @@
+    ...
+
+    var spellbook = new Packages.org.bukkit.inventory.ItemStack(Packages.org.bukkit.Material['WRITTEN_BOOK'], 1);
+    var spells = spellbook.itemMeta;
+
+    spells.setTitle('Spellbook');
+    spells.setAuthor('Shadowcat');
+    spells.addPage("1");
+    spells.addPage("2");
+    spells.addPage("3");
+    spells.addPage("4");
+    spells.addPage("5");
+//  spells.addPage("{\\\"text\\\":\\\"daytime\\\",\\\"clickEvent\\\":{\\\"action\\\":\\\"run_command\\\",\\\"value\\\":\\\"/time set day\\\"}}");
+//  spells.addPage("{\\\"text\\\":\\\"nighttime\\\",\\\"clickEvent\\\":{\\\"action\\\":\\\"run_command\\\",\\\"value\\\":\\\"/time set night\\\"}}");
+    spells.setPage(1, '{text:daytime,clickEvent:{action:run_command,value:"/time set day"}}');
+    spells.setPage(2, '{text:nighttime,clickEvent:{action:run_command,value:"/time set night"}}');
+
+    spellbook.itemMeta = spells;
+
+    //var BungeeApi = Packages.net.md_5.bungee.chat;
+    //var page = BungeeApi.ComponentSerializer.parse('{"clickEvent":{"action":"run_command","value":"/gamemode s"},"hoverEvent":{"action":"show_text","value":[{"text":"change to Survival"}]},"text":"click me"}');
+
+    //var BungeeApi = Packages.net.md_5.bungee.api;
+    //var pagetext = new BungeeApi.chat.TextComponent("click me");
+    //pagetext.setClickEvent(new BungeeApi.chat.ClickEvent(BungeeApi.chat.ClickEvent.Action.RUN_COMMAND, "/gamemode s"));
+    //pagetext.setHoverEvent(new BungeeApi.chat.HoverEvent(BungeeApi.chat.HoverEvent.Action.SHOW_TEXT, new BungeeApi.chat.ComponentBuilder("change to Survival").create()));
+    //console.log('enchantmentbook : DBUG : json : ' + Packages.net.md_5.bungee.chat.ComponentSerializer.toString(pagetext));
+    //var page = Packages.net.minecraft.util.IChatComponent.Serializer(Packages.net.md_5.bungee.chat.ComponentSerializer.toString(pagetext));
+    //spells.spigot().addPage(page);
+    //spellbook.itemMeta = spells;
+
+    var playerinventory = player.getInventory().getContents();
+    var indxempty = player.getInventory().firstEmpty();
+
+    player.getInventory().setItem(indxempty, spellbook);
+
+    ...
+
