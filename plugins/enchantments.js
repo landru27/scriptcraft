@@ -122,7 +122,7 @@
 //
 //  Sustenance            Saturation         mycelium
 //  Protection            Absorption         blaze powder
-//  Healing               Instant Health     melon
+//  Healing               Instant Health     golden melon
 //  Healing Aura          Instant Health     golden apple    (cloud effect)
 //  Regeneration          Regeneration       ghast tear
 //
@@ -283,7 +283,7 @@ var enchantments = {
         name: 'Flaming Sword',
         enchantment: org.bukkit.enchantments.Enchantment.getByName('FIRE_ASPECT'),
         reagent: {
-            item: org.bukkit.Material.GUNPOWDER,
+            item: org.bukkit.Material.SULPHUR,
             amount: 4
         },
         targetItem: org.bukkit.Material.DIAMOND_SWORD
@@ -402,7 +402,7 @@ var wizardspells = {
         name: 'Healing',
         effect: org.bukkit.potion.PotionEffectType.HEAL,
         maxlevel: 30,
-        reagent: org.bukkit.Material.MELON
+        reagent: org.bukkit.Material.SPECKLED_MELON
     },
     'healingaura': {
         name: 'Healing Aura',
