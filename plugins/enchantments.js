@@ -1,13 +1,35 @@
 //////////////////////////////////////////////////////////////////////////////
 //
-//  a ScriptCraft plugin for allowing the player to cast specific
-//  enchantments at specific levels (instead of relying on the normal random
-//  enchantment mechanism), to cast spells for various effects (similar
-//  to using potions, but more like a wizard), and to cast various offensive
-//  and defensive spells (to extend the magic system of Minecraft further)
+//  a ScriptCraft plugin that expands Minecraft's magic system
+//
+//  this plugin allows the player to cast specific enchantments at specific
+//  levels (instead of relying on the normal random enchantment mechanism),
+//  to cast spells for various effects (similar to using potions, but more
+//  like a wizard), and to cast various offensive and defensive spells (to
+//  add breadth to Minecraft combat)
 //
 //  copyright 2018  Andrew Witt  landru729@gmail.com
 //  released under the MIT License
+//
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Permission is hereby granted, free of charge, to any person obtaining a
+//  copy of this software and associated documentation files (the "Software"),
+//  to deal in the Software without restriction, including without limitation
+//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+//  and/or sell copies of the Software, and to permit persons to whom the
+//  Software is furnished to do so, subject to the following conditions:
+//
+//  The above copyright notice and this permission notice shall be included
+//  in all copies or substantial portions of the Software.
+//
+//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+//  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+//  DEALINGS IN THE SOFTWARE.
 //
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -15,8 +37,8 @@
 //  table, that book is turned into one of a couple of different spellbooks,
 //  and placed into his/her inventory
 //
-//  one spellbook is for enchantment spells, and one is for various effects,
-//  protections, and attacks
+//  one spellbook is for enchantment spells, and one is for wizard spells:
+//  various effects, defenses, and attacks
 //
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -25,28 +47,47 @@
 //  enchanting table, which requires a sneak-use (e.g., shift-right-click)
 //  to open the spellbook)
 //
-//  other spells are cast by selecting them from the spellbook as needed
+//  wizard spells are cast by selecting them from the spellbook as needed
 //
-//  it takes lapis lazuli to cast a spell, but also an appropriate reagent;
-//  for example, packed ice for Frost Walker, rabbit's foot for Fortune,
-//  obsidian for Unbreaking, and so forth;  the higer the spell level, the
-//  more lapis lazuli and the more reagent needed
+//  both enchantments and wizard spells take lapis lazuli, an appropriate
+//  reagent, and redstone to be cast; the higer the spell level, the more
+//  of each is used; for enchantments, blocks of redstone are used, but
+//  experience levels can be used instead, similar to how enchantment
+//  normally costs XP; for wizard spells, redstone dust is used; XP level
+//  limits both enchantments and wizard spells, but only enchantments use
+//  up XP levels (when there is not enough blocks of redstone)
 //
-//  casting a spell also costs redstone; for enchantments blocks of redstone
-//  are used, but experience levels can be used instead, similar to how
-//  enchantment normally costs XP;  for other spells redstone dust is used,
-//  and the amount available determines the strength or duration of the spell
+//  enchantments are listed in their spellbook along with a level; wizard
+//  spells are cast at the highest level possible, limited by the player's
+//  XP level and the ingredients available in his/her immediate inventory
+//  ('hotbar' inventory); this allows a player to carry ingredients for many
+//  high-powered spells, but still only cast one of a specific level (by
+//  keeping the excess in the general inventory ('UI' inventory)
+//
+//  a player must have 10 XP levels for each level of spell being cast; e.g.,
+//  20th XP level to cast any level II spell; 50th XP level to cast any level
+//  V spell; etc.
 //
 //  enchantments stack in the normal way; this means that an item can have
 //  multiple enchantments, and that an existing enchantment's level can be
 //  increased -- Minecraft automatically replaces the lower level enchantment
 //  of the same type
 //
+//  wizard spells that cause an effect on the player last 2 minutes for each
+//  level at which the spell is cast
+//
+//  some wizard spells have a maximum effective level (amplifier), in which
+//  case, the effect is applied at the maximum effective level, but the
+//  duration of the spell still corresponds to the level at which available
+//  reagents allow it to be cast; e.g., a level 7 Water Breathing spell
+//  grants Water Breating III, but lasts 14 minutes, and costs 7 each of
+//  lapis lazuli, reagent, and redstone dust
+//
 //////////////////////////////////////////////////////////////////////////////
 //
 //  enchantment           translation        reagent            qty (per level)
-//  ---------------       ---------------    --------           ---
-//  Respiration           Respiration        fish                 8
+//  ------------------    ---------------    ----------------   ---
+//  Respiration           Respiration        raw fish             8
 //  Depth Strider         Depth Strider      ink sack             8
 //  Frost Walker          Frost Walker       packed ice           8
 //
@@ -69,21 +110,40 @@
 //  Unbreaking Pickaxe    Unbreaking         obsidian             8
 //  Unbreaking Sword      Unbreaking         obsidian             8
 //
-//  spell                 translation        reagent            qty
-//  ---------------       ---------------    --------           ---
+//
+//  wizard spell          translation        reagent
+//  ------------------    ---------------    ----------------
+//  Jump                  Jump               rabbit hide
+//  Speed                 Speed              sugar
+//  Strength              Strength           blaze powder
+//  Water Breathing       Water Breathing    raw fish
+//  Night Vision          Night Vision       golden carrot
+//  Invisibility          Invisibility       fermented spider eye
+//
+//  Sustenance            Saturation         mycelium
+//  Protection            Absorption         blaze powder
+//  Healing               Instant Health     melon
+//  Healing Aura          Instant Health     golden apple    (cloud effect)
+//  Regeneration          Regeneration       ghast tear
+//
+//  Arrowfall             multiple arrows    flint           (narrow cone)
+//  Fireball              ghast fireball     magma cream     (one fireball)
+//  Firestorm             blaze fireballs    magma           (spread)
+//  Firestrike            targeted fire      magma           (nearby mobs)
+//  Lightning Strike      lightning strikes  blaze rod       (nearby mobs)
 //
 //////////////////////////////////////////////////////////////////////////////
 //
 //  enchantments cost:      lapis lazuli    :  1 per enchantment level
 //                          reagent         :  1 qty per enchantment level
-//                          redstone block  :  1 for level I
-//                          -or- XP            3 for level II
+//                          redstone blocks :  1 for level I
+//                          and/or XP levels   3 for level II
 //                                             5 for level III
 //                                             7 for level IV
 //                                             9 for level V
 //
-//  spells cost:            lapis lazuli    :  1 per degree
-//                          reagent         :  1 qty per degree
+//  wizard spells cost:     lapis lazuli    :  1 per degree
+//                          reagent         :  1 per degree
 //                          restone dust    :  1 per degree
 //
 //                          'degree' is strength, duration, etc.
@@ -545,15 +605,6 @@ command('wizardspell', function(parameters, player) {
 
     var wizardspelldefinition = wizardspells[wizardspellname];
 
-    // the degree of the spell is limited by the player's XP level, the
-    // amount of available lapis lazuli, the amount of available redstone
-    // dust, and the amount of available reagent
-    //
-    // only the player's immediate inventory ('hotbar' inventory) is checked;
-    // this allows the player to carry ingrediates for many high-powered
-    // spells, but still only cast one of a specific level (by keeping the
-    // excess in the general inventory ('UI' inventory)
-
     var xplvl = Math.floor(player.getLevel() / 10);
     var lapis = 0;
     var ragnt = 0;
@@ -797,7 +848,7 @@ command('wizardrybook', function(parameters, player) {
     command += 'extra:[{text:\\\"Night Vision\\\\n\\\",clickEvent:{action:run_command,value:\\\"/jsp wizardspell nightvision\\\"},';
     command += 'extra:[{text:\\\"Invisibilty\\\",clickEvent:{action:run_command,value:\\\"/jsp wizardspell invisibility\\\"}}]}]}]}]}]}]}]}]}",';
     // page 3
-    command +=       '"{text:\\\"Protection\\\\n\\\\n\\\",';
+    command +=       '"{text:\\\"Defense\\\\n\\\\n\\\",';
     command += 'extra:[{text:\\\"\\\\n\\\",';
     command += 'extra:[{text:\\\"Sustenance\\\\n\\\",clickEvent:{action:run_command,value:\\\"/jsp wizardspell sustenance\\\"},';
     command += 'extra:[{text:\\\"\\\\n\\\",';
