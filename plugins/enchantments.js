@@ -55,7 +55,7 @@
 //  experience levels can be used instead, similar to how enchantment
 //  normally costs XP; for wizard spells, redstone dust is used; XP level
 //  limits both enchantments and wizard spells, but only enchantments use
-//  up XP levels (when there is not enough blocks of redstone)
+//  up XP levels (when there are not enough blocks of redstone)
 //
 //  enchantments are listed in their spellbook along with a level; wizard
 //  spells are cast at the highest level possible, limited by the player's
@@ -142,21 +142,21 @@
 //                                             7 for level IV
 //                                             9 for level V
 //
-//  wizard spells cost:     lapis lazuli    :  1 per degree
-//                          reagent         :  1 per degree
-//                          restone dust    :  1 per degree
-//
-//                          'degree' is strength, duration, etc.
+//  wizard spells cost:     lapis lazuli    :  1 per level
+//                          reagent         :  1 per level
+//                          restone dust    :  1 per level
 //
 //////////////////////////////////////////////////////////////////////////////
 
 
 // import ScriptCraft modules
+//
 var utils = require('utils');
 var events = require('events');
 var slash = require('slash');
 var items = require('items');
 var inventory = require('inventory');
+
 
 // define the enchantments that we support in this plugin
 //
@@ -337,16 +337,16 @@ var enchantments = {
     }
 };
 
-// define the spell effect that we support in this plugin
+// define the wizard spells that we support in this plugin
 //
-// 'name'         is our name for the enchantment being cast, which in many cases
+// 'name'         is our name for the spell being cast, which in many cases
 //                matches the normal Minecraft name, but there is no actual tie
 //
 // 'effect'       is the Minecraft/Bukkit/Spigot Effect object; if present, the
 //                spell applies this effect to the player; if absent, the spell
 //                does something more specific
 //
-// 'reagent'      defines the ingredient required to cast this enchantment
+// 'reagent'      defines the ingredient required to cast this spell
 //
 var wizardspells = {
     'jump': {
@@ -385,6 +385,7 @@ var wizardspells = {
         maxlevel: 1,
         reagent: org.bukkit.Material.FERMENTED_SPIDER_EYE
     },
+
     'sustenance': {
         name: 'Sustenance',
         effect: org.bukkit.potion.PotionEffectType.SATURATION,
@@ -414,6 +415,7 @@ var wizardspells = {
         maxlevel: 5,
         reagent: org.bukkit.Material.GHAST_TEAR
     },
+
     'arrowfall': {
         name: 'Arrowfall',
         maxlevel: 8,
@@ -441,8 +443,7 @@ var wizardspells = {
     }
 };
 
-
-// for tracking the granting of this spellbook
+// for tracking the granting of the spellbooks
 //
 var store = persist('spellbooks', {players: {}});
 
@@ -450,18 +451,21 @@ var store = persist('spellbooks', {players: {}});
 // this is the /jsp command for casting an enchantment
 //
 // this is not intended to be used directly, but through the spellbook that this
-// plugin grants the player when he/she crafts a book and quill at an enchantment table
+// plugin grants the player when he/she crafts a book and quill at an enchantment table;
+// this meshes better with normal Survival gameplay, where /commands are used very
+// little, if at all
 //
 // but, nothing apart from awareness and command permissions stops a player from
 // issuing these enchantitem commands directly
 //
 command('enchantitem', function(parameters, player) {
+    // check that the player is near enough to and looking at his/her
+    // enchantment table
     var targetPos = utils.getMousePos(player.name);
     if (targetPos === null) {
         echo(player, 'you must be looking at your enchantment table');
         return;
     }
-
     var targetBlock = utils.blockAt(targetPos);
     if (targetBlock === null) {
         echo(player, 'you must be looking at your enchantment table');
@@ -475,15 +479,17 @@ command('enchantitem', function(parameters, player) {
     var enchantmentname = parameters[0];
     var enchantmentlevel = parameters[1];
 
+    // check syntax
     if (enchantmentname === undefined) {
         echo(player, 'you must state what enchantment you are performing');
         return;
     }
-    
     if (enchantmentlevel === undefined) {
         echo(player, 'you must state the level of enchantment you desire');
         return;
     }
+
+    // check bounds
     if (enchantmentlevel == 'I')   { enchantmentlevel = 1; }
     if (enchantmentlevel == 'II')  { enchantmentlevel = 2; }
     if (enchantmentlevel == 'III') { enchantmentlevel = 3; }
@@ -500,6 +506,7 @@ command('enchantitem', function(parameters, player) {
         return;
     }
 
+    // fetch the enchantment defintion from our data object
     var enchantmentdefinition = enchantments[enchantmentname];
 
     var displayname = enchantmentdefinition.name;
@@ -518,6 +525,7 @@ command('enchantitem', function(parameters, player) {
     displaynamereagent = displaynamereagent.replace(/_/g, ' ');
     displaynamereagent = displaynamereagent.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
 
+    // check bounds
     if (enchantmentlevel > enchantmentdefinition.enchantment.getMaxLevel()) {
         echo(player, 'the enchantment ' + enchantmentdefinition.name + ' has a maximum level of ' + enchantmentdefinition.enchantment.getMaxLevel());
         return;
@@ -525,6 +533,7 @@ command('enchantitem', function(parameters, player) {
 
     var playerinventory = player.getInventory().getContents();
 
+    // the item to be enchanted goes in the 1st inventory slot
     if (playerinventory[0] === null) {
         echo(player, 'place the item to be enchanted in your 1st inventory slot');
         return;
@@ -534,11 +543,13 @@ command('enchantitem', function(parameters, player) {
         return;
     }
 
+    // lapis lazuli goes in the 2nd inventory slot
     var lapisCost = enchantmentlevel;
     if (playerinventory[1] === null) {
         echo(player, 'place some lapis lazuli in your 2nd inventory slot');
         return;
     }
+    // yes: lapis lazuli is actually a squid's ink sack, colored blue ... >sigh<
     if ((playerinventory[1].getType()            != org.bukkit.Material.INK_SACK) ||
         (playerinventory[1].getData().getColor() != org.bukkit.DyeColor.BLUE)) {
         echo(player, 'place some lapis lazuli in your 2nd inventory slot');
@@ -549,6 +560,7 @@ command('enchantitem', function(parameters, player) {
         return;
     }
 
+    // the spell reagent goes in the 3rd inventory slot
     var reagentCost = enchantmentdefinition.reagent.amount * enchantmentlevel;
     if (playerinventory[2] === null) {
         echo(player, 'place the spell reagents in your 3nd inventory slot');
@@ -563,6 +575,8 @@ command('enchantitem', function(parameters, player) {
         return;
     }
 
+    // a stack of redstone blocks goes in the 4th inventory slot
+    // XP levels will be expended in place of an insufficient quantity of redstone blocks
     var redstone = 0;
     var rsxpCost = (enchantmentlevel * 2) - 1;
     var redstoneCost = 0;
@@ -578,19 +592,25 @@ command('enchantitem', function(parameters, player) {
         xplvlCost = rsxpCost - redstoneCost;
     }
 
+    // huzzah! apply the enchantment
     playerinventory[0].addEnchantment(enchantmentdefinition.enchantment, enchantmentlevel);
+
+    // consume the lapis lazuli, reagent, redstone blocks and/or XP levels
     playerinventory[1].setAmount(playerinventory[1].getAmount() - lapisCost);
     playerinventory[2].setAmount(playerinventory[2].getAmount() - reagentCost);
     if (redstoneCost > 0) { playerinventory[3].setAmount(playerinventory[3].getAmount() - redstoneCost); }
     if (xplvlCost    > 0) { player.setLevel(player.getLevel() - xplvlCost); }
 
+    // feedback to the player
     echo(player, 'your ' + displaynameitem + ' has been enchanted with ' + displayname);
 });
 
 // this is the /jsp command for casting a wizard spell
 //
 // this is not intended to be used directly, but through the spellbook that this
-// plugin grants the player when he/she crafts a book and quill at an enchantment table
+// plugin grants the player when he/she crafts a book and quill at an enchantment table;
+// this meshes better with normal Survival gameplay, where /commands are used very
+// little, if at all
 //
 // but, nothing apart from awareness and command permissions stops a player from
 // issuing these wizardspell commands directly
@@ -598,13 +618,16 @@ command('enchantitem', function(parameters, player) {
 command('wizardspell', function(parameters, player) {
     var wizardspellname = parameters[0];
 
+    // check syntax
     if (wizardspellname === undefined) {
         echo(player, 'you must state what wizard spell you are casting');
         return;
     }
 
+    // fetch the wizard spell defintion from our data object
     var wizardspelldefinition = wizardspells[wizardspellname];
 
+    // initialize the check for spellcasting components
     var xplvl = Math.floor(player.getLevel() / 10);
     var lapis = 0;
     var ragnt = 0;
@@ -616,11 +639,13 @@ command('wizardspell', function(parameters, player) {
     var indxragnt = 0;
     var indxrdust = 0;
 
+    // check for spellcasting components
     for (indx = 0; indx < 9; indx++) {
         if (playerinventory[indx] === null) {
             continue;
         }
 
+        // yes: lapis lazuli is actually a squid's ink sack, colored blue ... >sigh<
         if ((playerinventory[indx].getType()            == org.bukkit.Material.INK_SACK) &&
             (playerinventory[indx].getData().getColor() == org.bukkit.DyeColor.BLUE)) {
             lapis = playerinventory[indx].getAmount();
@@ -638,29 +663,31 @@ command('wizardspell', function(parameters, player) {
         }
     }
 
+    // the lowest available component amount determines the spell level
     var spelllevel = Math.min(xplvl, lapis, ragnt, rdust);
 
+    // ... and if that's zero, it's a whole lotta NOPE!
     if (spelllevel == 0) {
         echo(player, 'you are not properly prepared to cast ' + wizardspelldefinition.name);
         return;
     }
 
-    // consume the spell ingredients
+    // consume the lapis lazuli, reagent, and redstone dust
     playerinventory[indxlapis].setAmount(playerinventory[indxlapis].getAmount() - spelllevel);
     playerinventory[indxragnt].setAmount(playerinventory[indxragnt].getAmount() - spelllevel);
     playerinventory[indxrdust].setAmount(playerinventory[indxrdust].getAmount() - spelllevel);
 
-    // general logic for potion-effect-like spells
+    // general logic for potion-effect-like spells    -OR-
+    // specific logic for other spells
     if (wizardspelldefinition.effect !== undefined) {
         duration = 20 * 120 * spelllevel;
         amplifier = Math.min(spelllevel, wizardspelldefinition.maxlevel);
 
-//      var potioneffect = wizardspelldefinition.effect.createEffect(duration, amplifier);
-//      player.addPotionEffect(potioneffect, true);
         player.addPotionEffect(wizardspelldefinition.effect.createEffect(duration, amplifier), true);
     } else {
     }
 
+    // feedback to the player
     echo(player, 'you have cast ' + wizardspelldefinition.name + ' at level ' + spelllevel);
 });
 
@@ -679,15 +706,17 @@ function grantSpellbook(event) {
     // context it should be very difficult to regain lost spellbooks
     //
     var hasplayer = store.players[player.name];
-    var hasbook;
     if (!hasplayer) {
         store.players[player.name] = {};
         store.players[player.name].enchantments = false;
         store.players[player.name].wizardry = false;
     }
-    hasbook = store.players[player.name].enchantments;
+    var hasbook = store.players[player.name].enchantments;
     if ((!hasbook) || (hasbook == false)) {
         // is there a better way to call our own "command('enchantmentsbook', ..." method?
+        //
+        // we do it this way to stay DRY, for support of both the event listening and a non-event
+        // way to perform the same operation;  is this the best way to accomplish that?
         slash('jsp enchantmentsbook', player);
 
         // consume the book and quill provided
@@ -701,6 +730,9 @@ function grantSpellbook(event) {
     hasbook = store.players[player.name].wizardry;
     if ((!hasbook) || (hasbook == false)) {
         // is there a better way to call our own "command('wizardrybook', ..." method?
+        //
+        // we do it this way to stay DRY, for support of both the event listening and a non-event
+        // way to perform the same operation;  is this the best way to accomplish that?
         slash('jsp wizardrybook', player);
 
         // consume the book and quill provided
@@ -712,8 +744,13 @@ function grantSpellbook(event) {
     }
 }
 
+// listen for PrepareItemEnchant events, in order to step in and create the spellbooks
+//
 events.prepareItemEnchant(grantSpellbook);
 
+// this can be used to reset the granting of the spellbooks, in case a player drops one
+// in some lava or something unfortunate like that
+//
 command('clearspellbooks', function(parameters, player) {
     var hasplayer = store.players[player.name];
 
@@ -725,7 +762,12 @@ command('clearspellbooks', function(parameters, player) {
     store.players[player.name].wizardry = false;
 });
 
-
+// the /jsp commands for creating / granting the spellbooks
+//
+// we have these as /jsp commands for flexibility in issuing them; e.g., this lets an Op
+// grant a player the spellbooks ad-hoc;  see above note in the event listener method
+// about whether or not this is the best way to accomplish this in a DRY manner
+//
 command('enchantmentsbook', function(parameters, player) {
 
     //
