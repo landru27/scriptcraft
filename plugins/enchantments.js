@@ -700,7 +700,7 @@ function grantSpellbook(event) {
         return;
     }
 
-    player = event.getEnchanter();
+    var player = event.getEnchanter();
 
     // grant each spellbook only once; this can be cleared, but in a more competitive
     // context it should be very difficult to regain lost spellbooks
@@ -744,9 +744,60 @@ function grantSpellbook(event) {
     }
 }
 
+function fashionWand(event) {
+    // the player might be using the enchanting table for a normal enchantment, in
+    // which case, we bow out
+    var enchitem = event.getItem();
+    if (enchitem.getType() != org.bukkit.Material.BLAZE_ROD) {
+        return;
+    }
+
+    var player = event.getEnchanter();
+
+    var playerlocation = player.location;
+    var playerworld = playerlocation.world;
+
+    var wandStack = new Packages.org.bukkit.inventory.ItemStack(org.bukkit.Material.BLAZE_ROD);
+    var wandMeta = wandStack.getItemMeta();
+    wandMeta.setDisplayName('Wand of Arrowfall');
+    wandStack.setItemMeta(wandMeta);
+    var wandItem = playerworld.dropItem(playerlocation, wandStack);
+
+    enchitem.setAmount(0);
+}
+
+function useWand(event) {
+    var useitem = event.getItem();
+    if (useitem == null) {
+        return;
+    }
+    if (useitem.getType() != org.bukkit.Material.BLAZE_ROD) {
+        return;
+    }
+    if (event.getAction() != org.bukkit.event.block.Action.LEFT_CLICK_AIR) {
+        return;
+    }
+
+    var player = event.getPlayer();
+    var wandStack = useitem;
+    var wandMeta = wandStack.getItemMeta();
+    var wandName = wandMeta.getDisplayName();
+
+    if (wandName == 'Wand of Arrowfall') {
+        arrowfall(player, 8);
+    }
+}
+
 // listen for PrepareItemEnchant events, in order to step in and create the spellbooks
+// or wands
 //
 events.prepareItemEnchant(grantSpellbook);
+events.prepareItemEnchant(fashionWand);
+
+// listen for PlayerInteract events, in order to step in and create the spellbooks
+// or wands
+//
+events.playerInteract(useWand);
 
 // this can be used to reset the granting of the spellbooks, in case a player drops one
 // in some lava or something unfortunate like that
@@ -914,3 +965,35 @@ command('wizardrybook', function(parameters, player) {
 
     slash(command);
 });
+
+
+function arrowfall(player, qty) {
+    var indx = 0;
+
+    repeatwithdelay(function() {
+        var playerlocation = player.location;
+        var playerworld = playerlocation.world;
+        var playerdirection = player.location.direction;
+        var aheadofplayer = player.location.add(0.0, 1.0, 0.0).add(playerdirection);
+
+        playerworld.spawnArrow(aheadofplayer, playerdirection, 3, 2);
+    }, 200, qty, true);
+}
+
+// https://codereview.stackexchange.com/questions/13046/javascript-repeat-a-function-x-times-at-i-intervals
+//
+function repeatwithdelay(callback, interval, repeats, immediate) {
+    var timer, trigger;
+    trigger = function () {
+        callback();
+        --repeats || clearInterval(timer);
+    };
+
+    interval = interval <= 0 ? 1000 : interval; // default: 1000ms
+    repeats  = parseInt(repeats, 10) || 1;      // default: just once
+    timer    = setInterval(trigger, interval);
+
+    if( !!immediate ) { // Coerce boolean
+        trigger();
+    }
+}
