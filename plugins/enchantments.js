@@ -465,6 +465,12 @@ var wizardwands = {
         name: 'Fireball Wand',
         reagent: org.bukkit.Material.MAGMA_CREAM,
         spellfunc: function(player) {
+                       var playerlocation = player.location;
+                       var playerworld = playerlocation.world;
+                       var playerdirection = player.location.direction;
+                       var aheadofplayer = player.location.add(0.0, 2.0, 0.0).add(playerdirection);
+
+                       var fireball = playerworld.spawnEntity(aheadofplayer, org.bukkit.entity.EntityType.FIREBALL);
                    }
     },
     'firestorm': {
