@@ -591,21 +591,6 @@ command('enchantitem', function(parameters, player) {
         return;
     }
 
-    // the spell reagent goes in the 4th inventory slot
-    var reagentCost = enchantmentdefinition.reagent.amount * enchantmentlevel;
-    if (playerinventory[3] === null) {
-        echo(player, 'place the spell reagents in your 4th inventory slot');
-        return;
-    }
-    if (playerinventory[3].getType() != enchantmentdefinition.reagent.item) {
-        echo(player, 'the enchantment ' + enchantmentdefinition.name + ' must be performed with ' + displaynamereagent);
-        return;
-    }
-    if (playerinventory[3].getAmount() < reagentCost) {
-        echo(player, 'the enchantment ' + displayname + ' must be performed with at least ' + reagentCost + ' ' + displaynamereagent);
-        return;
-    }
-
     // a stack of redstone blocks goes in the 3rd inventory slot
     // XP levels will be expended in place of an insufficient quantity of redstone blocks
     var redstone = 0;
@@ -621,6 +606,21 @@ command('enchantitem', function(parameters, player) {
     } else {
         redstoneCost = redstone;
         xplvlCost = rsxpCost - redstoneCost;
+    }
+
+    // the spell reagent goes in the 4th inventory slot
+    var reagentCost = enchantmentdefinition.reagent.amount * enchantmentlevel;
+    if (playerinventory[3] === null) {
+        echo(player, 'place the spell reagents in your 4th inventory slot');
+        return;
+    }
+    if (playerinventory[3].getType() != enchantmentdefinition.reagent.item) {
+        echo(player, 'the enchantment ' + enchantmentdefinition.name + ' must be performed with ' + displaynamereagent);
+        return;
+    }
+    if (playerinventory[3].getAmount() < reagentCost) {
+        echo(player, 'the enchantment ' + displayname + ' must be performed with at least ' + reagentCost + ' ' + displaynamereagent);
+        return;
     }
 
     // huzzah! apply the enchantment
