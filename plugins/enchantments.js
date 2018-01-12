@@ -455,7 +455,7 @@ var wizardwands = {
                            var playerlocation = player.location;
                            var playerworld = playerlocation.world;
                            var playerdirection = player.location.direction;
-                           var aheadofplayer = player.location.add(0.0, 2.0, 0.0).add(playerdirection);
+                           var aheadofplayer = player.location.add(0.0, 1.7, 0.0).add(playerdirection.normalize().multiply(2));
 
                            playerworld.spawnArrow(aheadofplayer, playerdirection, 3, 1);
                        }, 200, 8, true);
@@ -468,15 +468,23 @@ var wizardwands = {
                        var playerlocation = player.location;
                        var playerworld = playerlocation.world;
                        var playerdirection = player.location.direction;
-                       var aheadofplayer = player.location.add(0.0, 2.0, 0.0).add(playerdirection);
+                       var aheadofplayer = player.location.add(0.0, 1.3, 0.0).add(playerdirection);
 
-                       var fireball = playerworld.spawnEntity(aheadofplayer, org.bukkit.entity.EntityType.FIREBALL);
+                       playerworld.spawnEntity(aheadofplayer, org.bukkit.entity.EntityType.FIREBALL);
                    }
     },
     'firestorm': {
         name: 'Firestorm Wand',
         reagent: org.bukkit.Material.SULPHUR,
         spellfunc: function(player) {
+                       repeatwithdelay(function() {
+                           var playerlocation = player.location;
+                           var playerworld = playerlocation.world;
+                           var playerdirection = player.location.direction;
+                           var aheadofplayer = player.location.add(0.0, 1.7, 0.0).add(playerdirection.normalize().multiply(2));
+
+                           playerworld.spawnEntity(aheadofplayer, org.bukkit.entity.EntityType.SMALL_FIREBALL);
+                       }, 200, 8, true);
                    }
     },
     'firestrike': {
@@ -492,6 +500,7 @@ var wizardwands = {
                    }
     }
 };
+
 
 //////////////////////////////////////////////////////////////////////////////
 //  for tracking the granting of the spellbooks
