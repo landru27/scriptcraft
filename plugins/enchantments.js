@@ -160,7 +160,7 @@
 //
 //  fashion wand cost:      lapis lazuli    : 64
 //                          redstone dust   : 64
-//                          reagent         : 64
+//                          reagent         : 32
 //
 //////////////////////////////////////////////////////////////////////////////
 
@@ -448,24 +448,42 @@ var wizardspells = {
 //
 var wizardwands = {
     'arrowfall': {
-        name: 'Arrowfall',
-        reagent: org.bukkit.Material.FLINT
+        name: 'Wand of Arrowfall',
+        reagent: org.bukkit.Material.FLINT,
+        spellfunc: function(player) {
+                       repeatwithdelay(function() {
+                           var playerlocation = player.location;
+                           var playerworld = playerlocation.world;
+                           var playerdirection = player.location.direction;
+                           var aheadofplayer = player.location.add(0.0, 2.0, 0.0).add(playerdirection);
+
+                           playerworld.spawnArrow(aheadofplayer, playerdirection, 3, 1);
+                       }, 200, 8, true);
+                   }
     },
     'fireball': {
-        name: 'Fireball',
-        reagent: org.bukkit.Material.MAGMA_CREAM
+        name: 'Fireball Wand',
+        reagent: org.bukkit.Material.MAGMA_CREAM,
+        spellfunc: function(player) {
+                   }
     },
     'firestorm': {
-        name: 'Firestorm',
-        reagent: org.bukkit.Material.MAGMA
+        name: 'Firestorm Wand',
+        reagent: org.bukkit.Material.SULPHUR,
+        spellfunc: function(player) {
+                   }
     },
     'firestrike': {
-        name: 'Firestrike',
-        reagent: org.bukkit.Material.MAGMA
+        name: 'Firestrike Wand',
+        reagent: org.bukkit.Material.MAGMA,
+        spellfunc: function(player) {
+                   }
     },
     'lightningstrike': {
-        name: 'Lightning Strike',
-        reagent: org.bukkit.Material.BLAZE_ROD
+        name: 'Wand of Lightning',
+        reagent: org.bukkit.Material.BLAZE_ROD,
+        spellfunc: function(player) {
+                   }
     }
 };
 
@@ -717,22 +735,6 @@ command('wizardspell', function(parameters, player) {
     echo(player, 'you have cast ' + wizardspelldefinition.name + ' at level ' + spelllevel);
 });
 
-// these are the functions for casting spells from wands;  the casting is done by an
-// event listener, and that event listener calls one of these functions
-//
-function arrowfall(player, qty) {
-    var indx = 0;
-
-    repeatwithdelay(function() {
-        var playerlocation = player.location;
-        var playerworld = playerlocation.world;
-        var playerdirection = player.location.direction;
-        var aheadofplayer = player.location.add(0.0, 1.0, 0.0).add(playerdirection);
-
-        playerworld.spawnArrow(aheadofplayer, playerdirection, 3, 2);
-    }, 200, qty, true);
-}
-
 
 //////////////////////////////////////////////////////////////////////////////
 //  event handling
@@ -798,18 +800,101 @@ function fashionWand(event) {
         return;
     }
 
+    // we consume the item on the enchantment table to prevent multiple event firings;
+    // in cases where we return early, we drop a new blaze rod for immediate pick-up
+    enchitem.setAmount(0);
+
     var player = event.getEnchanter();
 
+    var playerinventory = player.getInventory().getContents();
     var playerlocation = player.location;
     var playerworld = playerlocation.world;
 
+    // lapis lazuli goes in the 1st inventory slot
+    var lapisCost = 64;
+    if (playerinventory[0] === null) {
+        echo(player, 'fashioning a wand requires ' + lapisCost + ' lapis lazuli in your 1st inventory slot');
+        dropNewBlazeRod(playerlocation);
+        return;
+    }
+    // yes: lapis lazuli is actually a squid's ink sack, colored blue ... >sigh<
+    if ((playerinventory[0].getType()            != org.bukkit.Material.INK_SACK) ||
+        (playerinventory[0].getData().getColor() != org.bukkit.DyeColor.BLUE)) {
+        echo(player, 'fashioning a wand requires ' + lapisCost + ' lapis lazuli in your 1st inventory slot');
+        dropNewBlazeRod(playerlocation);
+        return;
+    }
+    if (playerinventory[0].getAmount() < lapisCost) {
+        echo(player, 'fashioning a wand requires ' + lapisCost + ' lapis lazuli in your 1st inventory slot');
+        dropNewBlazeRod(playerlocation);
+        return;
+    }
+
+    // redstone dust goes in the 2nd inventory slot
+    var redstoneCost = 64;
+    if (playerinventory[1] === null) {
+        echo(player, 'fashioning a wand requires ' + redstoneCost + ' redstone dust in your 2nd inventory slot');
+        dropNewBlazeRod(playerlocation);
+        return;
+    }
+    if (playerinventory[1].getType() != org.bukkit.Material.REDSTONE) {
+        echo(player, 'fashioning a wand requires ' + redstoneCost + ' redstone dust in your 2nd inventory slot');
+        dropNewBlazeRod(playerlocation);
+        return;
+    }
+    if (playerinventory[1].getAmount() < redstoneCost) {
+        echo(player, 'fashioning a wand requires ' + redstoneCost + ' redstone dust in your 2nd inventory slot');
+        dropNewBlazeRod(playerlocation);
+        return;
+    }
+
+    // the spell reagent goes in the 3rd inventory slot
+    var reagentCost = 32;
+    if (playerinventory[2] === null) {
+        echo(player, 'fashioning a wand requires ' + reagentCost + ' reagent in your 3rd inventory slot');
+        dropNewBlazeRod(playerlocation);
+        return;
+    }
+    var indx;
+    var wandIndx;
+    var wandList = Object.getOwnPropertyNames(wizardwands);
+    var wandQty = wandList.length;
+    for (indx = 0; indx < wandQty; indx++) {
+        if (playerinventory[2].getType() == wizardwands[wandList[indx]].reagent) {
+            wandIndx = indx;
+        }
+    }
+    if (wandIndx === undefined) {
+        echo(player, 'fashioning a wand requires an appropriate reagent in your 3rd inventory slot');
+        dropNewBlazeRod(playerlocation);
+        return;
+    }
+    if (playerinventory[2].getAmount() < reagentCost) {
+        echo(player, 'fashioning a wand requires ' + reagentCost + ' reagent in your 3rd inventory slot');
+        dropNewBlazeRod(playerlocation);
+        return;
+    }
+
+    // fashion the wand as a new blaze rod bearing a wand name
     var wandStack = new Packages.org.bukkit.inventory.ItemStack(org.bukkit.Material.BLAZE_ROD);
     var wandMeta = wandStack.getItemMeta();
-    wandMeta.setDisplayName('Wand of Arrowfall');
+    wandMeta.setDisplayName(wizardwands[wandList[wandIndx]].name);
     wandStack.setItemMeta(wandMeta);
+    // drop it into the world right where the player is, for immediate pick-up
     var wandItem = playerworld.dropItem(playerlocation, wandStack);
 
+    // consume the lapis lazuli, redstone dust, and reagent
+    playerinventory[0].setAmount(playerinventory[0].getAmount() - lapisCost);
+    playerinventory[1].setAmount(playerinventory[1].getAmount() - redstoneCost);
+    playerinventory[2].setAmount(playerinventory[2].getAmount() - reagentCost);
+
+    // consume the blaze rod provided for fashioning the wand
     enchitem.setAmount(0);
+}
+
+function dropNewBlazeRod(playerlocation) {
+    var wandStack = new Packages.org.bukkit.inventory.ItemStack(org.bukkit.Material.BLAZE_ROD);
+    var wandItem = playerlocation.world.dropItem(playerlocation, wandStack);
 }
 
 function useWand(event) {
@@ -829,8 +914,14 @@ function useWand(event) {
     var wandMeta = wandStack.getItemMeta();
     var wandName = wandMeta.getDisplayName();
 
-    if (wandName == 'Wand of Arrowfall') {
-        arrowfall(player, 8);
+    var indx = 0;
+    var wandList = Object.getOwnPropertyNames(wizardwands);
+    var wandQty = wandList.length;
+
+    for (indx = 0; indx < wandQty; indx++) {
+        if (wizardwands[wandList[indx]].name == wandName) {
+            wizardwands[wandList[indx]].spellfunc(player);
+        }
     }
 }
 
