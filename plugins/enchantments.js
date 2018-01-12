@@ -514,7 +514,8 @@ var wizardwands = {
                                (nearby[indx].getType() == org.bukkit.entity.EntityType.ZOMBIE) ||
                                (nearby[indx].getType() == org.bukkit.entity.EntityType.ZOMBIE_HORSE) ||
                                (nearby[indx].getType() == org.bukkit.entity.EntityType.ZOMBIE_VILLAGER)) {
-                               playerworld.getBlockAt(nearby[indx].getLocation()).setType(org.bukkit.Material.FIRE)
+
+                               playerworld.getBlockAt(nearby[indx].getLocation()).setType(org.bukkit.Material.FIRE);
                            }
                        }
                    }
@@ -523,6 +524,33 @@ var wizardwands = {
         name: 'Wand of Lightning',
         reagent: org.bukkit.Material.BLAZE_ROD,
         spellfunc: function(player) {
+                       var playerlocation = player.location;
+                       var playerworld = playerlocation.world;
+
+                       var nearby = playerworld.getNearbyEntities(playerlocation, 8.0, 8.0, 8.0);
+                       var qtynearby = nearby.length;
+                       for (var indx = 0; indx < qtynearby; indx++) {
+                           if ((nearby[indx].getType() == org.bukkit.entity.EntityType.CAVE_SPIDER) ||
+                               (nearby[indx].getType() == org.bukkit.entity.EntityType.CREEPER) ||
+                               (nearby[indx].getType() == org.bukkit.entity.EntityType.EVOKER) ||
+                               (nearby[indx].getType() == org.bukkit.entity.EntityType.GIANT) ||
+                               (nearby[indx].getType() == org.bukkit.entity.EntityType.HUSK) ||
+                               (nearby[indx].getType() == org.bukkit.entity.EntityType.ILLUSIONER) ||
+                               (nearby[indx].getType() == org.bukkit.entity.EntityType.SKELETON) ||
+                               (nearby[indx].getType() == org.bukkit.entity.EntityType.SKELETON_HORSE) ||
+                               (nearby[indx].getType() == org.bukkit.entity.EntityType.SLIME) ||
+                               (nearby[indx].getType() == org.bukkit.entity.EntityType.SPIDER) ||
+                               (nearby[indx].getType() == org.bukkit.entity.EntityType.STRAY) ||
+                               (nearby[indx].getType() == org.bukkit.entity.EntityType.VEX) ||
+                               (nearby[indx].getType() == org.bukkit.entity.EntityType.VINDICATOR) ||
+                               (nearby[indx].getType() == org.bukkit.entity.EntityType.WITCH) ||
+                               (nearby[indx].getType() == org.bukkit.entity.EntityType.ZOMBIE) ||
+                               (nearby[indx].getType() == org.bukkit.entity.EntityType.ZOMBIE_HORSE) ||
+                               (nearby[indx].getType() == org.bukkit.entity.EntityType.ZOMBIE_VILLAGER)) {
+
+                               playerworld.strikeLightning(nearby[indx].getLocation());
+                           }
+                       }
                    }
     }
 };
