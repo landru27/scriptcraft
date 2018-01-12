@@ -5,8 +5,8 @@
 //  this plugin allows the player to cast specific enchantments at specific
 //  levels (instead of relying on the normal random enchantment mechanism),
 //  to cast spells for various effects (similar to using potions, but more
-//  like a wizard), and to cast various offensive and defensive spells (to
-//  add breadth to Minecraft combat)
+//  like a wizard), and to fashion wands which cast various offensive and
+//  defensive spells (to add breadth to Minecraft combat)
 //
 //  copyright 2018  Andrew Witt  landru729@gmail.com
 //  released under the MIT License
@@ -40,14 +40,20 @@
 //  one spellbook is for enchantment spells, and one is for wizard spells:
 //  various effects, defenses, and attacks
 //
+//  when a player provides a blaze rod as the item on his/her enchanting
+//  table, that blaze rod is fashioned into a spell casting wand, depending
+//  on the reagents supplied (by having them in inventory)
+//
 //////////////////////////////////////////////////////////////////////////////
 //
 //  enchantments are cast by selecting them from the spellbook, while in front
 //  of an enchanting table  (the player must in fact be looking at his/her
-//  enchanting table, which requires a sneak-use (e.g., shift-right-click)
+//  enchanting table, which requires a 'sneak-use' (e.g., shift-right-click)
 //  to open the spellbook)
 //
 //  wizard spells are cast by selecting them from the spellbook as needed
+//
+//  wands are used by waving them with a 'use' action (e.g., left-click)
 //
 //  both enchantments and wizard spells take lapis lazuli, an appropriate
 //  reagent, and redstone to be cast; the higer the spell level, the more
@@ -56,6 +62,9 @@
 //  normally costs XP; for wizard spells, redstone dust is used; XP level
 //  limits both enchantments and wizard spells, but only enchantments use
 //  up XP levels (when there are not enough blocks of redstone)
+//
+//  wands do not require any ingredients to use, but take lapis lazuli,
+//  redstone, and an appropriate reagent to fashion
 //
 //  enchantments are listed in their spellbook along with a level; wizard
 //  spells are cast at the highest level possible, limited by the player's
@@ -126,6 +135,9 @@
 //  Healing Aura          Instant Health     golden apple    (cloud effect)
 //  Regeneration          Regeneration       ghast tear
 //
+//
+//  wand                  translation        reagent
+//  ------------------    ---------------    ----------------
 //  Arrowfall             multiple arrows    flint           (narrow cone)
 //  Fireball              ghast fireball     magma cream     (one fireball)
 //  Firestorm             blaze fireballs    magma           (spread)
@@ -146,10 +158,15 @@
 //                          reagent         :  1 per level
 //                          restone dust    :  1 per level
 //
+//  fashion wand cost:      lapis lazuli    : 64
+//                          reagent         : 64
+//                          restone dust    : 64
+//
 //////////////////////////////////////////////////////////////////////////////
 
 
-// import ScriptCraft modules
+//////////////////////////////////////////////////////////////////////////////
+//  import ScriptCraft modules
 //
 var utils = require('utils');
 var events = require('events');
@@ -158,6 +175,10 @@ var items = require('items');
 var inventory = require('inventory');
 
 
+//////////////////////////////////////////////////////////////////////////////
+//  define data structures
+//////////////////////////////////////////////////////////////////////////////
+//
 // define the enchantments that we support in this plugin
 //
 // 'name'         is our name for the enchantment being cast, which in many cases
@@ -406,6 +427,7 @@ var wizardspells = {
     },
     'healingaura': {
         name: 'Healing Aura',
+        effect: org.bukkit.potion.PotionEffectType.HEAL,
         maxlevel: 15,
         reagent: org.bukkit.Material.GOLDEN_APPLE
     },
@@ -414,40 +436,49 @@ var wizardspells = {
         effect: org.bukkit.potion.PotionEffectType.REGENERATION,
         maxlevel: 5,
         reagent: org.bukkit.Material.GHAST_TEAR
-    },
+    }
+};
 
+// define the spell casting wands that we support in this plugin
+//
+// 'name'         is our name for the spell being cast
+//
+// 'reagent'      defines the ingredient required to fashion a wand
+//                for casting this spell
+//
+var wizardwands = {
     'arrowfall': {
         name: 'Arrowfall',
-        maxlevel: 8,
         reagent: org.bukkit.Material.FLINT
     },
     'fireball': {
         name: 'Fireball',
-        maxlevel: 8,
         reagent: org.bukkit.Material.MAGMA_CREAM
     },
     'firestorm': {
         name: 'Firestorm',
-        maxlevel: 8,
         reagent: org.bukkit.Material.MAGMA
     },
     'firestrike': {
         name: 'Firestrike',
-        maxlevel: 8,
         reagent: org.bukkit.Material.MAGMA
     },
     'lightningstrike': {
         name: 'Lightning Strike',
-        maxlevel: 8,
         reagent: org.bukkit.Material.BLAZE_ROD
     }
 };
 
-// for tracking the granting of the spellbooks
+//////////////////////////////////////////////////////////////////////////////
+//  for tracking the granting of the spellbooks
 //
 var store = persist('spellbooks', {players: {}});
 
 
+//////////////////////////////////////////////////////////////////////////////
+//  define our /jsp commands
+//////////////////////////////////////////////////////////////////////////////
+//
 // this is the /jsp command for casting an enchantment
 //
 // this is not intended to be used directly, but through the spellbook that this
@@ -677,20 +708,35 @@ command('wizardspell', function(parameters, player) {
     playerinventory[indxragnt].setAmount(playerinventory[indxragnt].getAmount() - spelllevel);
     playerinventory[indxrdust].setAmount(playerinventory[indxrdust].getAmount() - spelllevel);
 
-    // general logic for potion-effect-like spells    -OR-
-    // specific logic for other spells
-    if (wizardspelldefinition.effect !== undefined) {
-        duration = 20 * 120 * spelllevel;
-        amplifier = Math.min(spelllevel, wizardspelldefinition.maxlevel);
-
-        player.addPotionEffect(wizardspelldefinition.effect.createEffect(duration, amplifier), true);
-    } else {
-    }
+    // cast the spell
+    duration = 20 * 120 * spelllevel;
+    amplifier = Math.min(spelllevel, wizardspelldefinition.maxlevel);
+    player.addPotionEffect(wizardspelldefinition.effect.createEffect(duration, amplifier), true);
 
     // feedback to the player
     echo(player, 'you have cast ' + wizardspelldefinition.name + ' at level ' + spelllevel);
 });
 
+// these are the functions for casting spells from wands;  the casting is done by an
+// event listener, and that event listener calls one of these functions
+//
+function arrowfall(player, qty) {
+    var indx = 0;
+
+    repeatwithdelay(function() {
+        var playerlocation = player.location;
+        var playerworld = playerlocation.world;
+        var playerdirection = player.location.direction;
+        var aheadofplayer = player.location.add(0.0, 1.0, 0.0).add(playerdirection);
+
+        playerworld.spawnArrow(aheadofplayer, playerdirection, 3, 2);
+    }, 200, qty, true);
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
+//  event handling
+//////////////////////////////////////////////////////////////////////////////
 
 function grantSpellbook(event) {
     // the player might be using the enchanting table for a normal enchantment, in
@@ -788,36 +834,19 @@ function useWand(event) {
     }
 }
 
-// listen for PrepareItemEnchant events, in order to step in and create the spellbooks
-// or wands
-//
+// listen for PrepareItemEnchant events, in order to step in and create the spellbooks or wands
 events.prepareItemEnchant(grantSpellbook);
 events.prepareItemEnchant(fashionWand);
 
-// listen for PlayerInteract events, in order to step in and create the spellbooks
-// or wands
-//
+// listen for PlayerInteract events, in order to step in and cast the spell from the wand
 events.playerInteract(useWand);
-
-// this can be used to reset the granting of the spellbooks, in case a player drops one
-// in some lava or something unfortunate like that
-//
-command('clearspellbooks', function(parameters, player) {
-    var hasplayer = store.players[player.name];
-
-    if (!hasplayer) {
-        store.players[player.name] = {};
-    }
-
-    store.players[player.name].enchantments = false;
-    store.players[player.name].wizardry = false;
-});
 
 // the /jsp commands for creating / granting the spellbooks
 //
-// we have these as /jsp commands for flexibility in issuing them; e.g., this lets an Op
-// grant a player the spellbooks ad-hoc;  see above note in the event listener method
-// about whether or not this is the best way to accomplish this in a DRY manner
+// we have these as /jsp commands for flexibility in issuing them; e.g., they are mainly
+// used by the above event handling, but this also lets an Op grant a player the
+// spellbooks ad-hoc;  see above note in the event listener method asking whether or not
+// this is the best way to accomplish this in a DRY manner
 //
 command('enchantmentsbook', function(parameters, player) {
 
@@ -949,36 +978,31 @@ command('wizardrybook', function(parameters, player) {
     command += 'extra:[{text:\\\"Healing\\\\n\\\",clickEvent:{action:run_command,value:\\\"/jsp wizardspell healing\\\"},';
     command += 'extra:[{text:\\\"Healing Aura\\\\n\\\",clickEvent:{action:run_command,value:\\\"/jsp wizardspell healingaura\\\"},';
     command += 'extra:[{text:\\\"\\\\n\\\",';
-    command += 'extra:[{text:\\\"Regeneration\\\",clickEvent:{action:run_command,value:\\\"/jsp wizardspell regeneration\\\"}}]}]}]}]}]}]}]}]}",';
-    // page 4
-    command +=       '"{text:\\\"Attacks\\\\n\\\\n\\\",';
-    command += 'extra:[{text:\\\"\\\\n\\\",';
-    command += 'extra:[{text:\\\"Arrowfall\\\\n\\\",clickEvent:{action:run_command,value:\\\"/jsp wizardspell arrowfall\\\"},';
-    command += 'extra:[{text:\\\"\\\\n\\\",';
-    command += 'extra:[{text:\\\"Fireball\\\\n\\\",clickEvent:{action:run_command,value:\\\"/jsp wizardspell fireball\\\"},';
-    command += 'extra:[{text:\\\"Firestorm\\\\n\\\",clickEvent:{action:run_command,value:\\\"/jsp wizardspell firestorm\\\"},';
-    command += 'extra:[{text:\\\"Firestrike\\\\n\\\",clickEvent:{action:run_command,value:\\\"/jsp wizardspell firestrike\\\"},';
-    command += 'extra:[{text:\\\"\\\\n\\\",';
-    command += 'extra:[{text:\\\"Lightning Strike\\\",clickEvent:{action:run_command,value:\\\"/jsp wizardspell lightningstrike\\\"}}]}]}]}]}]}]}]}]}"';
+    command += 'extra:[{text:\\\"Regeneration\\\",clickEvent:{action:run_command,value:\\\"/jsp wizardspell regeneration\\\"}}]}]}]}]}]}]}]}]}"';
     // end of pages array
     command += ']}';
 
     slash(command);
 });
 
+// this can be used to reset the granting of the spellbooks, in case a player
+// drops one in some lava or something unfortunate like that
+//
+command('clearspellbooks', function(parameters, player) {
+    var hasplayer = store.players[player.name];
 
-function arrowfall(player, qty) {
-    var indx = 0;
+    if (!hasplayer) {
+        store.players[player.name] = {};
+    }
 
-    repeatwithdelay(function() {
-        var playerlocation = player.location;
-        var playerworld = playerlocation.world;
-        var playerdirection = player.location.direction;
-        var aheadofplayer = player.location.add(0.0, 1.0, 0.0).add(playerdirection);
+    store.players[player.name].enchantments = false;
+    store.players[player.name].wizardry = false;
+});
 
-        playerworld.spawnArrow(aheadofplayer, playerdirection, 3, 2);
-    }, 200, qty, true);
-}
+
+//////////////////////////////////////////////////////////////////////////////
+//  utility functions
+//////////////////////////////////////////////////////////////////////////////
 
 // https://codereview.stackexchange.com/questions/13046/javascript-repeat-a-function-x-times-at-i-intervals
 //
