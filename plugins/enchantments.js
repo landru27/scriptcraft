@@ -55,8 +55,8 @@
 //
 //  wands are used by waving them with a 'use' action (e.g., left-click)
 //
-//  both enchantments and wizard spells take lapis lazuli, an appropriate
-//  reagent, and redstone to be cast; the higer the spell level, the more
+//  both enchantments and wizard spells take lapis lazuli, redstone, and
+//  an appropriate reagent to be cast; the higer the spell level, the more
 //  of each is used; for enchantments, blocks of redstone are used, but
 //  experience levels can be used instead, similar to how enchantment
 //  normally costs XP; for wizard spells, redstone dust is used; XP level
@@ -88,9 +88,9 @@
 //  some wizard spells have a maximum effective level (amplifier), in which
 //  case, the effect is applied at the maximum effective level, but the
 //  duration of the spell still corresponds to the level at which available
-//  reagents allow it to be cast; e.g., a level 7 Water Breathing spell
+//  ingredients allow it to be cast; e.g., a level 7 Water Breathing spell
 //  grants Water Breating III, but lasts 14 minutes, and costs 7 each of
-//  lapis lazuli, reagent, and redstone dust
+//  lapis lazuli, redstone dust, and reagent
 //
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -147,20 +147,20 @@
 //////////////////////////////////////////////////////////////////////////////
 //
 //  enchantments cost:      lapis lazuli    :  1 per enchantment level
-//                          reagent         :  1 qty per enchantment level
 //                          redstone blocks :  1 for level I
 //                          and/or XP levels   3 for level II
 //                                             5 for level III
 //                                             7 for level IV
 //                                             9 for level V
+//                          reagent         :  1 qty per enchantment level
 //
 //  wizard spells cost:     lapis lazuli    :  1 per level
+//                          redstone dust   :  1 per level
 //                          reagent         :  1 per level
-//                          restone dust    :  1 per level
 //
 //  fashion wand cost:      lapis lazuli    : 64
+//                          redstone dust   : 64
 //                          reagent         : 64
-//                          restone dust    : 64
 //
 //////////////////////////////////////////////////////////////////////////////
 
@@ -591,29 +591,29 @@ command('enchantitem', function(parameters, player) {
         return;
     }
 
-    // the spell reagent goes in the 3rd inventory slot
+    // the spell reagent goes in the 4th inventory slot
     var reagentCost = enchantmentdefinition.reagent.amount * enchantmentlevel;
-    if (playerinventory[2] === null) {
-        echo(player, 'place the spell reagents in your 3nd inventory slot');
+    if (playerinventory[3] === null) {
+        echo(player, 'place the spell reagents in your 4th inventory slot');
         return;
     }
-    if (playerinventory[2].getType() != enchantmentdefinition.reagent.item) {
+    if (playerinventory[3].getType() != enchantmentdefinition.reagent.item) {
         echo(player, 'the enchantment ' + enchantmentdefinition.name + ' must be performed with ' + displaynamereagent);
         return;
     }
-    if (playerinventory[2].getAmount() < reagentCost) {
+    if (playerinventory[3].getAmount() < reagentCost) {
         echo(player, 'the enchantment ' + displayname + ' must be performed with at least ' + reagentCost + ' ' + displaynamereagent);
         return;
     }
 
-    // a stack of redstone blocks goes in the 4th inventory slot
+    // a stack of redstone blocks goes in the 3rd inventory slot
     // XP levels will be expended in place of an insufficient quantity of redstone blocks
     var redstone = 0;
     var rsxpCost = (enchantmentlevel * 2) - 1;
     var redstoneCost = 0;
     var xplvlCost = 0;
-    if ((playerinventory[3] !== null) && (playerinventory[3].getType() == org.bukkit.Material.REDSTONE_BLOCK)){
-        redstone = playerinventory[3].getAmount();
+    if ((playerinventory[2] !== null) && (playerinventory[2].getType() == org.bukkit.Material.REDSTONE_BLOCK)){
+        redstone = playerinventory[2].getAmount();
     }
     if (redstone >= rsxpCost) {
         redstoneCost = rsxpCost;
@@ -626,11 +626,11 @@ command('enchantitem', function(parameters, player) {
     // huzzah! apply the enchantment
     playerinventory[0].addEnchantment(enchantmentdefinition.enchantment, enchantmentlevel);
 
-    // consume the lapis lazuli, reagent, redstone blocks and/or XP levels
+    // consume the lapis lazuli, redstone blocks and/or XP levels, and reagent
     playerinventory[1].setAmount(playerinventory[1].getAmount() - lapisCost);
-    playerinventory[2].setAmount(playerinventory[2].getAmount() - reagentCost);
-    if (redstoneCost > 0) { playerinventory[3].setAmount(playerinventory[3].getAmount() - redstoneCost); }
+    if (redstoneCost > 0) { playerinventory[2].setAmount(playerinventory[2].getAmount() - redstoneCost); }
     if (xplvlCost    > 0) { player.setLevel(player.getLevel() - xplvlCost); }
+    playerinventory[3].setAmount(playerinventory[3].getAmount() - reagentCost);
 
     // feedback to the player
     echo(player, 'your ' + displaynameitem + ' has been enchanted with ' + displayname);
@@ -661,14 +661,14 @@ command('wizardspell', function(parameters, player) {
     // initialize the check for spellcasting components
     var xplvl = Math.floor(player.getLevel() / 10);
     var lapis = 0;
-    var ragnt = 0;
     var rdust = 0;
+    var ragnt = 0;
 
     var playerinventory = player.getInventory().getContents();
     var indx = 0;
     var indxlapis = 0;
-    var indxragnt = 0;
     var indxrdust = 0;
+    var indxragnt = 0;
 
     // check for spellcasting components
     for (indx = 0; indx < 9; indx++) {
@@ -683,19 +683,19 @@ command('wizardspell', function(parameters, player) {
             indxlapis = indx;
         }
 
+        if (playerinventory[indx].getType() == org.bukkit.Material.REDSTONE) {
+            rdust = playerinventory[indx].getAmount();
+            indxrdust = indx;
+
         if (playerinventory[indx].getType() == wizardspelldefinition.reagent) {
             ragnt = playerinventory[indx].getAmount();
             indxragnt = indx;
         }
-
-        if (playerinventory[indx].getType() == org.bukkit.Material.REDSTONE) {
-            rdust = playerinventory[indx].getAmount();
-            indxrdust = indx;
         }
     }
 
     // the lowest available component amount determines the spell level
-    var spelllevel = Math.min(xplvl, lapis, ragnt, rdust);
+    var spelllevel = Math.min(xplvl, lapis, rdust, ragnt);
 
     // ... and if that's zero, it's a whole lotta NOPE!
     if (spelllevel == 0) {
@@ -703,10 +703,10 @@ command('wizardspell', function(parameters, player) {
         return;
     }
 
-    // consume the lapis lazuli, reagent, and redstone dust
+    // consume the lapis lazuli, redstone dust, and reagent
     playerinventory[indxlapis].setAmount(playerinventory[indxlapis].getAmount() - spelllevel);
-    playerinventory[indxragnt].setAmount(playerinventory[indxragnt].getAmount() - spelllevel);
     playerinventory[indxrdust].setAmount(playerinventory[indxrdust].getAmount() - spelllevel);
+    playerinventory[indxragnt].setAmount(playerinventory[indxragnt].getAmount() - spelllevel);
 
     // cast the spell
     duration = 20 * 120 * spelllevel;
@@ -874,7 +874,7 @@ command('enchantmentsbook', function(parameters, player) {
     command += 'pages:[';
     // page 1
     command +=       '"{text:\\\"Enchantments\\\\n\\\\n\\\",';
-    command += 'extra:[{text:\\\"Use these spells to cast specific enchantments with an item, lapis lazuli, reagents, and redstone blocks in your first few inventory slots; XP levels can substitute for redstone.\\\"}]}",';
+    command += 'extra:[{text:\\\"Use these spells to cast specific enchantments with an item, lapis lazuli, redstone blocks, and reagents in your first few inventory slots; XP levels can substitute for redstone.\\\"}]}",';
     // page 2
     command +=       '"{text:\\\"Helm and Boots\\\\n\\\\n\\\",';
     command += 'extra:[{text:\\\"Respiration I\\\\n\\\",clickEvent:{action:run_command,value:\\\"/jsp enchantitem respiration 1\\\"},';
@@ -958,7 +958,7 @@ command('wizardrybook', function(parameters, player) {
     command += 'pages:[';
     // page 1
     command +=       '"{text:\\\"Wizard Spells\\\\n\\\\n\\\",';
-    command += 'extra:[{text:\\\"Use this book to cast various spells with lapis lazuli, reagents, and redstone dust in your immediate inventory\\\"}]}",';
+    command += 'extra:[{text:\\\"Use this book to cast various spells with lapis lazuli, redstone dust, and reagents in your immediate inventory\\\"}]}",';
     // page 2
     command +=       '"{text:\\\"Effects\\\\n\\\\n\\\",';
     command += 'extra:[{text:\\\"\\\\n\\\",';
