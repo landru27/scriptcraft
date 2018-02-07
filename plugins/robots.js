@@ -13,6 +13,8 @@ var newrobot = function(botname) {
         echo(self, 'could not build a new robot');
         return;
     }
+
+    // TODO : activate the newly-built robot
 };
 exports.newrobot = newrobot;
 
@@ -665,5 +667,9 @@ function activaterobotai(bot) {
 
 // make it so!
 botmastercontrol();
+
+//
+// TODO : use an event listener to activate a player's robots when he/she joins the gameworld
+//
 
 //////////////////////////////////////////////////////////////////////////////
