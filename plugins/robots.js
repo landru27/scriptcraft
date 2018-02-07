@@ -1,201 +1,142 @@
 //////////////////////////////////////////////////////////////////////////////
-//  interface functions
+////    interface functions    ///////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 
-// 'craft' a new robot
-var newrobot = function(name) {
-    var bot;
+//////////////////////////////////////////////////////////////////////////////
+// standard interface
 
-    bot = buildbot(name);
+var newrobot = function(botname) {
+    var playername = self.getName();
+
+    var bot = buildbot(playername, botname);
     if (bot === null) {
-        echo(self, 'could not instantiate a new robot');
+        echo(self, 'could not build a new robot');
         return;
     }
-
-    robotai(self, bot);
-}
+};
 exports.newrobot = newrobot;
 
-var activaterobot = function(name) {
-    var bot;
-    var botstatus;
-
-    bot = findrobot(self);
+var robotname = function() {
+    var bot = findrobot(self);
     if (bot === null) {
         echo(self, 'could not find a robot nearby');
         return;
     }
 
-    botstatus = bot.getMetadata('botstatus')[0].value();
-    if (botstatus === undefined) {
-        botstatus = {
-            name: name,
-            command: 'idle',
-            commandtick: 0,
-            commandarg1: 0,
-        };
+    var botstatus = bot.getMetadata('botstatus')[0].value();
+    if (botstatus === null) {
+        echo(self, 'this robot has an empty databank');
+        return;
     }
-    bot.setMetadata('botstatus', new org.bukkit.metadata.FixedMetadataValue(__plugin, botstatus));
 
-    robotai(self, bot);
-}
-exports.activaterobot = activaterobot;
+    if ((botstatus.name === undefined) ||
+        (botstatus.name === null) ||
+        (botstatus.name === "")) {
+        echo(self, 'this robot has no name');
+        return;
+    }
 
-// give the robot a tool
-var giverobot = function() {
-    var player = self;
-    var playerinventory = player.getInventory();
+    echo(self, 'this robot is named : ' + botstatus.name);
+};
+exports.robotname = robotname;
 
+var robotmeta = function() {
     var bot = findrobot(self);
-    var gift = playerinventory.getItemInMainHand();
-    bot.setItemInHand(gift);
-    playerinventory.setItemInMainHand(null);
-}
-exports.giverobot = giverobot;
+    if (bot === null) {
+        echo(self, 'could not find a robot nearby');
+        return;
+    }
 
-// give a robot instructions
-var commandrobot = function(name, command, duration, arg1) {
-    var bot;
-    var err;
-    var rslt;
+    var botstatus = bot.getMetadata('botstatus')[0].value();
+    if (botstatus === null) {
+        echo(self, 'this robot has an empty databank');
+        return;
+    }
 
-    if ((name === undefined) || (name === null)) {
-        bot = findrobot(self);
+    echo(self, 'this robot was built by : ' + botstatus.player);
+    echo(self, 'this robot is named     : ' + botstatus.name);
+    echo(self, 'this robot command is   : ' + botstatus.command);
+};
+exports.robotmeta = robotmeta;
+
+var namerobot = function(botname) {
+    var bot = findrobot(self);
+    if (bot === null) {
+        echo(self, 'could not find a robot nearby');
+        return;
+    }
+
+    if ((botname === undefined) ||
+        (botname === null) ||
+        (botname === "")) {
+        echo(self, 'you must supply a name as a parameter');
+        return;
+    }
+
+    if (typeof botname !== 'string') {
+        echo(self, 'the name parameter must be a string');
+        return;
+    }
+
+    var botstatus = bot.getMetadata('botstatus')[0].value();
+    if (botstatus === null) {
+        echo(self, 'initializing databank for this robot');
+        botstatus = {};
+    }
+
+    botstatus.name = botname;
+    echo(self, 'named this robot : ' + botstatus.name);
+
+    bot.setMetadata('botstatus', new org.bukkit.metadata.FixedMetadataValue(__plugin, botstatus));
+};
+exports.namerobot = namerobot;
+
+var commandrobot = function(botcommand, botname) {
+    var err = 'undef';
+    var idx = 'undef';
+    var bot = null;
+
+    if ((botname === undefined) ||
+        (botname === null) ||
+        (botname === "") ||
+        (typeof botname !== 'string')) {
         err = 'nearby';
+        idx = 'nearby';
+        bot = findrobot(self);
     } else {
-        bot = findrobotbyname(self, name);
         err = 'by that name';
+        idx = ': ' + botname;
+        bot = findrobotbyname(self, botname);
     }
     if (bot === null) {
         echo(self, 'could not find a robot ' + err);
         return;
     }
 
-    if (command  === undefined) { command  = 'idle'; }
-    if (duration === undefined) { duration =      0; }
-
-    rslt = setrobotcommand(bot, command, duration, arg1);
-    if (! rslt) {
-        echo(self, 'could not set the command for that robot');
+    if ((botcommand === undefined) ||
+        (botcommand === null) ||
+        (botcommand === "")) {
+        echo(self, 'you must supply a command as a parameter');
         return;
     }
-}
-exports.commandrobot = commandrobot;
 
-function setrobotcommand(bot, cmnd, dura, arg1) {
-    if ((bot  === undefined) || (bot  === null)) { return false; }
-    if ((cmnd === undefined) || (cmnd === null)) { return false; }
-    if ((dura === undefined) || (dura === null)) { return false; }
-
-    if (arg1 !== undefined)
-
-    var botstatus;
-
-    botstatus = bot.getMetadata('botstatus')[0].value();
-
-    if (botstatus === undefined) {
-        botstatus = {
-            name: 'unknown',
-            command: 'idle',
-            commandtick: 0,
-            commandarg1: 0,
-        };
+    if (typeof botcommand !== 'string') {
+        echo(self, 'the command parameter must be a string');
+        return;
     }
 
-    botstatus.command = cmnd;
-    botstatus.commandtick = dura;
+    var botstatus = bot.getMetadata('botstatus')[0].value();
+    if (botstatus === null) {
+        echo(self, 'initializing databank for this robot');
+        botstatus = {};
+    }
 
-    if (arg1 !== undefined) { botstatus.commandarg1 = arg1; }
+    botstatus.command = botcommand;
+    echo(self, 'gave command to robot ' + idx + ' : ' + botcommand);
 
     bot.setMetadata('botstatus', new org.bukkit.metadata.FixedMetadataValue(__plugin, botstatus));
-
-    return true;
-}
-
-
-//////////////////////////////////////////////////////////////////////////////
-// provisioning
-
-function buildbot(name) {
-    // place the robot on top of and in the center of the block the player is looking at
-    botlocation = self.getTargetBlock(null, 8).getLocation().add(0.5, 1.0, 0.5);
-
-    var bot = self.getWorld().spawnEntity(botlocation, org.bukkit.entity.EntityType.ARMOR_STAND);
-    bot.setArms(true);
-    bot.setBasePlate(false);
-    bot.setHelmet(new org.bukkit.inventory.ItemStack(org.bukkit.Material.COMMAND));
-
-    if (name === null)      { name = randomString(8); }
-    if (name === undefined) { name = randomString(8); }
-
-    var botstatusinit = {
-        name: name,
-        command: 'idle',
-        commandtick: 0,
-        commandarg1: 0,
-    };
-    bot.setMetadata('botstatus', new org.bukkit.metadata.FixedMetadataValue(__plugin, botstatusinit));
-
-    echo(self, 'instantiated a robot named ' + botstatusinit.name);
-
-    return bot;
-}
-
-function robotai(person, bot) {
-    echo(self, 'starting robot ai');
-
-    continuouswithdelay(function() {
-
-        if (bot.isDead()  == true) { return true; }
-        if (bot.isValid() != true) { return true; }
-
-        var botstatus = bot.getMetadata('botstatus')[0].value();
-
-        botstatus.commandtick++;
-        //console.log('commandtick ticker is : ' + botstatus.commandtick);
-
-        // ... facenorth ...
-        // ... mineforward ...
-        // ... minedownward ...
-        // ... mineoutwardspiral ...
-        // ... mineoutwarddownwardspiral ...
-
-        if (botstatus.command == 'idle') {
-
-            botstatus.commandtick = 0;
-
-        } else if (botstatus.command == 'turn90') {
-
-            turninplace(bot, 90);
-            botstatus.command = 'idle';
-
-        } else if (botstatus.command == 'turnangle') {
-
-            turninplace(bot, botstatus.commandarg);
-            botstatus.command = 'idle';
-
-        } else if (botstatus.command == 'stepforward') {
-
-            stepfwd(bot);
-            botstatus.command = 'idle';
-
-        } else if (botstatus.command == 'wander') {
-
-            if (botstatus.commandtick > 8) {
-                turninplace(bot, (Math.random() * 180) - 90);
-                botstatus.commandtick = 0;
-            }
-
-            stepfwd(bot);
-
-        } else {
-            console.log('bot ' + botstatus.name + ' is without instructions');
-            botstatus.commandtick = 0;
-        }
-
-        bot.setMetadata('botstatus', new org.bukkit.metadata.FixedMetadataValue(__plugin, botstatus));
-
-    }, 200);
-}
+};
+exports.commandrobot = commandrobot;
 
 //////////////////////////////////////////////////////////////////////////////
 // simple commands, mainly for demonstration
@@ -244,124 +185,74 @@ exports.tellrobotturn = tellrobotturn;
 
 
 //////////////////////////////////////////////////////////////////////////////
-// higer-order commands
-var tellrobotmineahead = function(repeat) {
-    if (repeat === undefined) { repeat = 1; }
+////    AI routines    ///////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 
-    var player = self;
-    var bot = findrobot(player);
-    if (bot === null) { return; }
-    var flagX;
+// this section is for more involved AI routines that would be cumbersome to
+// include directly in the  'botcommandlibrary' object;  see 'wander' e.g.
 
-    repeatwithdelay(function() {
-        var flagM;
-        var flagS;
+var botexecwander = function(botstatus) {
+    if (botstatus.wandertick === undefined) { botstatus.wandertick = 0; }
+    if (botstatus.wandertick ===      null) { botstatus.wandertick = 0; }
 
-        if (flagX == true) { return; }
+    botstatus.wandertick++;
 
-        flagM = mineahead(bot);
-        if (flagM != true) {
-            flagS = stepfwd(bot);
-            if (flagS != true) {
-                flagX = true;
-            }
-        }
-    }, 200, repeat, true, function() {});
-}
-exports.tellrobotmineahead = tellrobotmineahead;
+    if (botstatus.wandertick > 8) {
+        turninplace(this, (Math.random() * 180) - 90);
+        botstatus.wandertick = 0;
+    }
 
-var tellrobotfindsheep = function(dist) {
-    var player = self;
-    var bot = findrobot(player);
-    if (bot === null) { return; }
+    stepfwd(this);
 
-    var botstatusinit = {
-        islookingforsheep: false,
-        foundsheep: false,
-        timeslookedforsheep: 0,
-    };
-    bot.setMetadata('botstatus', new org.bukkit.metadata.FixedMetadataValue(__plugin, botstatusinit));
+    return botstatus;
+};
 
-    continuouswithdelay(function() {
-        if (bot.isDead()  == true) { return true; }
-        if (bot.isValid() != true) { return true; }
-
-        var botstatus = bot.getMetadata('botstatus')[0].value();
-
-        if (botstatus.islookingforsheep == false) {
-            if (botstatus.foundsheep == false) {
-                if (botstatus.timeslookedforsheep > 2) {
-                    echo(player, 'could not find a sheep!');
-                    return true;
-                } else {
-                    echo(player, 'looking for a sheep ...');
-                    execrobotfindsheep(bot, dist);
-                }
-            } else {
-                echo(player, 'found a sheep!');
-                return true;
-            }
-        }
-
-    }, 200);
-}
-exports.tellrobotfindsheep = tellrobotfindsheep;
-
-var execrobotfindsheep = function(bot, dist) {
-    if (bot === null)          { return false; }
-    if (bot === undefined)     { return false; }
-    if (bot.isDead()  == true) { return false; }
-    if (bot.isValid() != true) { return false; }
-
-    if (dist === undefined) { repeat = 4; }
-
-    var botstatus = bot.getMetadata('botstatus')[0].value();
-    botstatus.islookingforsheep = true;
-    botstatus.foundsheep = false;
-
-    bot.setMetadata('botstatus', new org.bukkit.metadata.FixedMetadataValue(__plugin, botstatus));
-
-    var targetentity = null;
-    var step = 2;
-
-    repeatwithdelay(function() {
-        if (bot.isDead()  == true) { return true; }
-        if (bot.isValid() != true) { return true; }
-        if (targetentity !== null) { return true; }
-
-        targetentity = findentityahead(bot, org.bukkit.entity.EntityType.SHEEP, dist);
-        if (targetentity !== null) {
-            var botstatus = bot.getMetadata('botstatus')[0].value();
-            botstatus.islookingforsheep = false;
-            botstatus.foundsheep = true;
-
-            bot.setMetadata('botstatus', new org.bukkit.metadata.FixedMetadataValue(__plugin, botstatus));
-
-            return true;
-        }
-
-        turninplace(bot, step);
-    }, 200, (360 / step), true, function() {
-            var botstatus = bot.getMetadata('botstatus')[0].value();
-            botstatus.islookingforsheep = false;
-            botstatus.foundsheep = false;
-            botstatus.timeslookedforsheep++;
-
-            bot.setMetadata('botstatus', new org.bukkit.metadata.FixedMetadataValue(__plugin, botstatus));
-    });
-}
+// looking for entities ...
+//
+// ... targetentity = findentityahead(bot, org.bukkit.entity.EntityType.SHEEP, dist); ...
+// ... if (targetentity !== null) { ... }
 
 
 //////////////////////////////////////////////////////////////////////////////
-// robot functionality
+// base robot functionality
 
-var findrobot = function(player) {
+function buildbot(playername, botname) {
+    if (playername === undefined) { return null; }
+    if (playername ===      null) { return null; }
+
+    // place the robot on top of and in the center of the block the player is looking at
+    botlocation = self.getTargetBlock(null, 8).getLocation().add(0.5, 1.0, 0.5);
+
+    var bot = self.getWorld().spawnEntity(botlocation, org.bukkit.entity.EntityType.ARMOR_STAND);
+    bot.setArms(true);
+    bot.setBasePlate(false);
+    bot.setHelmet(new org.bukkit.inventory.ItemStack(org.bukkit.Material.COMMAND));
+
+    if (botname === undefined) { botname = randomString(8); }
+    if (botname ===      null) { botname = randomString(8); }
+
+    var botstatusinit = {
+        player: playername,
+        name: botname,
+        command: 'idle',
+    };
+    bot.setMetadata('botstatus', new org.bukkit.metadata.FixedMetadataValue(__plugin, botstatusinit));
+
+    console.log(self, 'instantiated a robot named ' + botstatusinit.name);
+
+    return bot;
+}
+
+function findrobot(player) {
     var playerlocation = player.getLocation();
     var playerdirection = playerlocation.getDirection();
     var playerworld = player.getWorld();
     var indx;
 
     var aheadofplayer = playerlocation.add(0.0, 1.0, 0.0).add(playerdirection.normalize().multiply(2));
+
+    // NOTE: this can/will turn any nearby armor stand into a robot; add logic here
+    // to filter out ordinary armor stands ...
 
     var nearby = playerworld.getNearbyEntities(aheadofplayer, 2, 2, 2);
     var qty = nearby.length;
@@ -371,18 +262,47 @@ var findrobot = function(player) {
             bot = nearby[indx];
         }
     }
-    if (bot === null) {
-        echo(player, 'did not find a robot nearby');
-    }
 
     return bot;
 }
 
-var findrobotbyname = function(player, name) {
+function findrobotbyname(player, name) {
+    var entities = server.worlds.get(0).getEntities();
+    var botmeta;
+    var botname;
+    var indx, qty;
+
+    qty = entities.length;
+    for(indx = 0; indx < qty; indx++) {
+        if (entities[indx].getType() == org.bukkit.entity.EntityType.ARMOR_STAND) {
+            botmeta = entities[indx].getMetadata('botstatus')[0].value();
+            if (botmeta !== null) {
+                if ((botmeta.player === undefined) ||
+                    (botmeta.player === null)) {
+                    playername = 'unknown';
+                } else {
+                    playername = botmeta.player;
+                }
+
+                if ((botmeta.name === undefined) ||
+                    (botmeta.name === null)) {
+                    botname = 'unknown';
+                } else {
+                    botname = botmeta.name;
+                }
+
+                if ((playername == player.getName()) &&
+                    (botname == name)) {
+                    return entities[indx];
+                }
+            }
+        }
+    }
+
     return null;
 }
 
-var stepfwd = function(bot) {
+function stepfwd(bot) {
     if (bot === null)          { return false; }
     if (bot === undefined)     { return false; }
     if (bot.isDead()  == true) { return false; }
@@ -410,7 +330,7 @@ var stepfwd = function(bot) {
     // if the two blocks immediately in front are clear, step forward
     if ((! blockInFront.getType().isSolid()) &&
         (! blockBelowInFront.getType().isSolid())) {
-        moved = bot.teleport(botlocation.add(0.0, 0.0, 0.0).add(botdirection.normalize().multiply(step)));
+        moved = bot.teleport(botlocation.add(0.0, 0.0, 0.0).add(botdirection.normalize().multiply((step / 2.0))));
     }
 
     // if the lower block ahead is solid and the two blocks above it are clear and the block overhead is clear, step up and forward
@@ -428,7 +348,7 @@ var stepfwd = function(bot) {
     return moved;
 }
 
-var turninplace = function(bot, angle) {
+function turninplace(bot, angle) {
     if (bot === null)          { return false; }
     if (bot === undefined)     { return false; }
     if (bot.isDead()  == true) { return false; }
@@ -445,7 +365,7 @@ var turninplace = function(bot, angle) {
     return turned;
 }
 
-var mineahead = function(bot) {
+function mineahead(bot) {
     if (bot === null)          { return false; }
     if (bot === undefined)     { return false; }
     if (bot.isDead()  == true) { return false; }
@@ -482,7 +402,7 @@ var mineahead = function(bot) {
     return mined;
 }
 
-var findentityahead = function(bot, entity, dist) {
+function findentityahead(bot, entity, dist) {
     if (bot === null)          { return null; }
     if (bot === undefined)     { return null; }
     if (bot.isDead()  == true) { return null; }
@@ -523,8 +443,10 @@ var findentityahead = function(bot, entity, dist) {
 
 
 //////////////////////////////////////////////////////////////////////////////
-//  utility functions
+////    utility functions    /////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 
+//
 // https://codereview.stackexchange.com/questions/13046/javascript-repeat-a-function-x-times-at-i-intervals
 // added check for 'cancel'
 // added 'whendone' as a callback for when the repetitions are complete
@@ -552,6 +474,7 @@ function repeatwithdelay(callback, interval, repeats, immediate, whendone) {
     }
 }
 
+//
 // variation on the above, for continuous execution
 //
 function continuouswithdelay(callback, interval) {
@@ -568,6 +491,7 @@ function continuouswithdelay(callback, interval) {
     timer    = setInterval(trigger, interval);
 }
 
+//
 // https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript
 //
 function randomString(len, charset) {
@@ -581,5 +505,165 @@ function randomString(len, charset) {
 
     return rstr;
 }
+
+
+//////////////////////////////////////////////////////////////////////////////
+////    the collection of robot AI commands    ///////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+//
+//  the AI defined below are general purpose;  this should be left as-is, but
+//  the object 'botcommandlibrary' can be extended to add more AI commands
+//
+//////////////////////////////////////////////////////////////////////////////
+
+var botcommandlibrary = {
+    // this command has no 'logic' property, to halt all processing
+    'halt': {
+    },
+
+    'idle': {
+        logic: function(botstatus) {
+                   if (botstatus.idletick === undefined) { botstatus.idletick = 0; }
+                   if (botstatus.idletick ===      null) { botstatus.idletick = 0; }
+
+                   botstatus.idletick++;
+
+                   if (botstatus.idletick > 32) {
+                       console.log('bot ' + botstatus.name + ' is idle');
+                       botstatus.idletick = 0;
+                   }
+
+                   return botstatus;
+               },
+    },
+
+    'facenorth': {
+        logic: function(botstatus) {
+                   var botlocation = this.getLocation();
+
+                   botlocation.setYaw(0);
+                   this.teleport(botlocation);
+
+                   botstatus.command = 'idle';
+
+                   return botstatus;
+               },
+    },
+
+    'turn90': {
+        logic: function(botstatus) {
+                   turninplace(this, 90);
+
+                   botstatus.command = 'idle';
+
+                   return botstatus;
+               },
+    },
+
+    'stepforward': {
+        logic: function(botstatus) {
+                   stepfwd(this);
+
+                   botstatus.command = 'idle';
+
+                   return botstatus;
+               },
+    },
+
+    'wander': {
+        logic: botexecwander,
+    },
+
+    // ... mineforward ...
+    // ... minedownward ...
+    // ... mineoutwardspiral ...
+    // ... mineoutwarddownwardspiral ...
+};
+
+
+//////////////////////////////////////////////////////////////////////////////
+////    core functionality    ////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////
+//  master control
+
+function botmastercontrol() {
+    var entities = server.worlds.get(0).getEntities();
+    var botmeta;
+    var playername;
+    var botname;
+    var indx, qty;
+
+    qty = entities.length;
+    for(indx = 0; indx < qty; indx++) {
+        if (entities[indx].getType() == org.bukkit.entity.EntityType.ARMOR_STAND) {
+            botmeta = entities[indx].getMetadata('botstatus')[0].value();
+            if (botmeta !== null) {
+                if ((botmeta.command !== undefined) &&
+                    (botmeta.command !== null)) {
+
+                    if ((botmeta.player === undefined) ||
+                        (botmeta.player === null)) {
+                        playername = 'unknown';
+                    } else {
+                        playername = botmeta.player;
+                    }
+
+                    if ((botmeta.name === undefined) ||
+                        (botmeta.name === null)) {
+                        botname = 'unknown';
+                    } else {
+                        botname = botmeta.name;
+                    }
+
+                    console.log('activating robot : ' + botname + ' for ' + playername);
+
+                    if ((playername != 'unknown') &&
+                        (botname != 'unknown')) {
+                        echo(server.getPlayer(playername), 'activating your robot : ' + botname);
+                    }
+
+                    activaterobotai(entities[indx]);
+                }
+            }
+        }
+    }
+}
+
+function activaterobotai(bot) {
+    continuouswithdelay(function() {
+        var botstatus;
+
+        if (bot.isDead()  == true) { return true; }
+        if (bot.isValid() != true) { return true; }
+
+        botstatus = bot.getMetadata('botstatus')[0].value();
+
+        if (botstatus !== null) {
+            if ((botstatus.command !== undefined) &&
+                (botstatus.command !== null)) {
+
+                if ((botcommandlibrary[botstatus.command] !== undefined) &&
+                    (botcommandlibrary[botstatus.command] !== null)) {
+
+                    cmndfunc = botcommandlibrary[botstatus.command].logic;
+
+                    if ((cmndfunc !== undefined) &&
+                        (cmndfunc !== null)) {
+
+                        botstatus = cmndfunc.call(bot, botstatus);
+                    }
+                }
+            }
+        }
+
+        bot.setMetadata('botstatus', new org.bukkit.metadata.FixedMetadataValue(__plugin, botstatus));
+
+    }, 200);
+}
+
+// make it so!
+botmastercontrol();
 
 //////////////////////////////////////////////////////////////////////////////
